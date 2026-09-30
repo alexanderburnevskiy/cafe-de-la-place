@@ -15,9 +15,18 @@ const MIME_TYPES = {
 
 const server = http.createServer((req, res) => {
   let reqPath = req.url.split('?')[0];
-  if (reqPath === '/') reqPath = '/client-widget.html';
 
-  const filePath = path.join(__dirname, reqPath);
+  // Route aliases
+  if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
+  else if (reqPath === '/admin') reqPath = '/admin.html';
+  else if (reqPath === '/widget') reqPath = '/client-widget.html';
+  else if (reqPath === '/dashboard') reqPath = '/staff-dashboard.html';
+
+  let filePath = path.join(__dirname, reqPath);
+  if (!path.extname(filePath) && fs.existsSync(filePath + '.html')) {
+    filePath += '.html';
+  }
+
   const ext = path.extname(filePath).toLowerCase();
 
   fs.readFile(filePath, (err, content) => {
@@ -41,7 +50,8 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
-  console.log(`- Widget client:   http://localhost:${PORT}/client-widget.html`);
-  console.log(`- Dashboard staff: http://localhost:${PORT}/staff-dashboard.html`);
+  console.log(`Café de la Place Server running on http://localhost:${PORT}/`);
+  console.log(`- Site web & Réservation : http://localhost:${PORT}/`);
+  console.log(`- Espace Personnel/Admin : http://localhost:${PORT}/admin`);
+  console.log(`- Widget autonome        : http://localhost:${PORT}/client-widget.html`);
 });

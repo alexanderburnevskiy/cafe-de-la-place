@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Administration — Café de la Place</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    /* Badges */
+    .badge-pending   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .badge-confirmed { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+    .badge-seated    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-cancelled { background: #f4f4f5; color: #71717a; border: 1px solid #e4e4e7; text-decoration: line-through; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-16px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .card-enter { animation: slideDown 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+    .card-cancelled { opacity: 0.55; }
+
+    .filter-tab {
+      padding: 0.5rem 1.1rem; border-radius: 9999px; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; border: none;
+      background: transparent; color: #71717a; transition: all 0.16s ease;
+    }
+    .filter-tab.active { background: #1c1917; color: #fff; }
+
+    .action-btn {
+      flex: 1; padding: 0.75rem 0.5rem; border-radius: 0.75rem; font-size: 0.825rem;
+      font-weight: 600; cursor: pointer; border: none; transition: all 0.16s ease;
+      display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+    }
+    .action-btn:active { transform: scale(0.96); }
+    .btn-confirm { background: #eff6ff; color: #1d4ed8; }
+    .btn-confirm:hover { background: #dbeafe; }
+    .btn-confirm.active-state { background: #1d4ed8; color: #fff; }
+    .btn-seat    { background: #f0fdf4; color: #15803d; }
+    .btn-seat:hover { background: #dcfce7; }
+    .btn-seat.active-state { background: #15803d; color: #fff; }
+    .btn-cancel  { background: #f4f4f5; color: #71717a; }
+    .btn-cancel:hover { background: #fee2e2; color: #b91c1c; }
+    .btn-cancel.active-state { background: #f4f4f5; color: #71717a; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      display: flex; align-items: flex-end; justify-content: center; z-index: 60;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-sheet {
+      background: #fff; border-radius: 1.5rem 1.5rem 0 0; padding: 1.5rem;
+      width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 100;
+      background: #1c1917; color: #fff; padding: 0.85rem 1.25rem;
+      border-radius: 1rem; font-size: 0.875rem; font-weight: 500;
+      display: flex; align-items: center; gap: 0.6rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @keyframes pulse-ring { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.5); } }
+    .rt-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse-ring 2s ease infinite; }
+    .rt-dot.disconnected { background: #ef4444; animation: none; }
+
+    .field-input {
+      width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem;
+      border: 1.5px solid #e5e5e5; font-size: 0.95rem; outline: none;
+      transition: border-color 0.16s, box-shadow 0.16s;
+    }
+    .field-input:focus { border-color: #92400e; box-shadow: 0 0 0 3px rgba(146,64,14,0.12); }
+  </style>
+</head>
+<body class="bg-[#f6f5f3] min-h-screen">
+
+  <!-- ════════════════════ AUTH SCREEN (GATEKEEPER) ════════════════════ -->
+  <div id="authScreen" class="fixed inset-0 z-50 bg-[#1c1917] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl text-center relative overflow-hidden">
+      <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-center text-2xl mx-auto mb-4">
+        🔒
+      </div>
+      <h2 class="text-xl font-bold text-stone-900">Espace Restaurant</h2>
+      <p class="text-xs text-stone-500 mt-1 mb-6">Accès réservé au personnel du Café de la Place</p>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Identifiant</label>
+          <input type="text" id="authLogin" required class="field-input text-stone-900" placeholder="admin" autocomplete="username" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Mot de passe</label>
+          <input type="password" id="authPass" required class="field-input text-stone-900" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+
+        <p id="authError" class="text-red-500 text-xs text-center hidden font-medium pt-1">
+          Identifiants incorrects.
+        </p>
+
+        <button type="submit" class="w-full bg-[#92400e] hover:bg-[#7c2d12] text-white py-3.5 rounded-xl font-semibold text-sm transition-colors mt-2 active:scale-98">
+          Se connecter
+        </button>
+      </form>
+
+      <div class="mt-6 pt-5 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
+        <a href="index.html" class="hover:text-stone-700 transition-colors">← Retour au site public</a>
+        <span>Saint-Légier</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ PROTECTED APP CONTENT ════════════════════ -->
+  <div id="appScreen" class="hidden">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80">
+      <div class="max-w-3xl mx-auto px-4 py-3">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-full bg-stone-900 text-amber-100 flex items-center justify-center text-xs font-bold">CP</span>
+            <div>
+              <h1 class="font-bold text-stone-900 text-sm leading-tight">Café de la Place — Service</h1>
+              <p class="text-xs text-stone-400" id="headerDate"></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 text-xs text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
+              <div class="rt-dot disconnected" id="rtDot"></div>
+              <span id="rtLabel">Connexion...</span>
+            </div>
+            <button onclick="handleLogout()" title="Déconnexion" class="text-stone-400 hover:text-stone-700 text-xs p-1.5 rounded-lg border border-stone-200 bg-stone-50">
+              Quitter 🚪
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="flex items-center bg-stone-100 rounded-full p-1 gap-0.5 flex-1">
+            <button class="filter-tab active" id="tab-all"  onclick="setFilter('all')">Tout</button>
+            <button class="filter-tab"        id="tab-midi" onclick="setFilter('midi')">🌞 Midi</button>
+            <button class="filter-tab"        id="tab-soir" onclick="setFilter('soir')">🌙 Soir</button>
+          </div>
+          <button onclick="openManualModal()" class="flex items-center gap-1.5 bg-[#92400e] text-white rounded-full px-4 py-2 text-xs font-semibold hover:bg-[#7c2d12] transition-colors active:scale-95">
+            + Réservation
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Date selector -->
+    <div class="sticky top-[105px] z-30 bg-[#f6f5f3] border-b border-stone-200/80">
+      <div class="max-w-3xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+        <div class="overflow-x-auto flex-1">
+          <div class="flex gap-2" id="dateTabs" style="min-width: max-content;"></div>
+        </div>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <input type="date" id="customDatePicker" onchange="setActiveDate(this.value)" class="text-xs bg-white border border-stone-200 rounded-full px-3 py-1.5 font-medium text-stone-700 outline-none hover:border-stone-400 cursor-pointer shadow-sm" title="Choisir une date spécifique" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Reservations Feed -->
+    <main class="max-w-3xl mx-auto px-4 py-4 pb-28">
+      <div id="reservationList" class="space-y-3"></div>
+      <div id="emptyState" class="text-center py-16 text-stone-400 hidden">
+        <div class="text-4xl mb-2">📋</div>
+        <p class="font-semibold text-stone-600 text-sm">Aucune réservation pour ce service</p>
+        <p class="text-xs mt-0.5">Les nouvelles réservations apparaîtront ici en direct.</p>
+      </div>
+    </main>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast">
+      <span id="toastIcon">🔔</span>
+      <span id="toastMsg">Nouvelle réservation !</span>
+    </div>
+
+    <!-- Phone Booking Modal -->
+    <div class="modal-overlay" id="manualModal">
+      <div class="modal-sheet">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-bold text-stone-900">Réservation par téléphone</h2>
+          <button onclick="closeManualModal()" class="text-stone-400 hover:text-stone-700">✕</button>
+        </div>
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-stone-600 mb-1">Nom du client *</label>
+            <input class="field-input" id="mName" type="text" placeholder="M. Dupont" />
+          </div>
+          <div>
+            <label class="block font-semibold text-stone-600 mb-1">Téléphone *</label>
+            <input class="field-input" id="mPhone" type="tel" placeholder="+41 79 123 45 67" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold text-stone-600 mb-1">Couverts *</label>
+              <select class="field-input" id="mGuests">
+                <option value="1">1 pers.</option>
+                <option value="2" selected>2 pers.</option>
+                <option value="3">3 pers.</option>
+                <option value="4">4 pers.</option>
+                <option value="5">5 pers.</option>
+                <option value="6">6 pers.</option>
+                <option value="7">7 pers.</option>
+                <option value="8">8 pers.</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-stone-600 mb-1">Date *</label>
+              <input class="field-input" id="mDate" type="date" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-semibold text-stone-600 mb-1">Service *</label>
+              <select class="field-input" id="mService" onchange="updateManualSlots()">
+                <option value="midi">Midi</option>
+                <option value="soir" selected>Soir</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-stone-600 mb-1">Heure *</label>
+              <select class="field-input" id="mTime"></select>
+            </div>
+          </div>
+          <div>
+            <label class="block font-semibold text-stone-600 mb-1">Remarques (allergie, table...)</label>
+            <input class="field-input" id="mNotes" type="text" placeholder="Fenêtre, chaise haute..." />
+          </div>
+          <p id="mError" class="text-red-500 hidden pt-1"></p>
+          <button onclick="submitManual()" class="w-full bg-[#92400e] text-white py-3 rounded-xl font-semibold mt-3 hover:bg-[#7c2d12]">
+            Enregistrer la réservation
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ════════════════════ CREDENTIALS & SECURITY ════════════════════
+    // Identifiants par défaut pour le restaurant (personnalisables)
+    const ADMIN_CREDENTIALS = {
+      user: 'admin',
+      pass: 'place1806' // code postal de Saint-Légier
+    };
+
+    function checkAuth() {
+      const isAuth = sessionStorage.getItem('cdp_auth_session') === 'true';
+      if (isAuth) {
+        document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('appScreen').classList.remove('hidden');
+        initDashboard();
+      } else {
+        document.getElementById('authScreen').classList.remove('hidden');
+        document.getElementById('appScreen').classList.add('hidden');
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('authLogin').value.trim();
+      const p = document.getElementById('authPass').value.trim();
+      const err = document.getElementById('authError');
+
+      if (u === ADMIN_CREDENTIALS.user && p === ADMIN_CREDENTIALS.pass) {
+        sessionStorage.setItem('cdp_auth_session', 'true');
+        err.classList.add('hidden');
+        checkAuth();
+      } else {
+        err.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('cdp_auth_session');
+      checkAuth();
+    }
+
+    // ════════════════════ DASHBOARD CORE ════════════════════
+    const SLOTS = {
+      midi: ['11:45','12:00','12:15','12:30','13:00'],
+      soir: ['18:30','19:00','19:30','20:00','20:30'],
+    };
+    const STATUS_LABELS = { pending:'En attente', confirmed:'Confirmé', seated:'Installé', cancelled:'Annulé' };
+    const STATUS_BADGE  = { pending:'badge-pending', confirmed:'badge-confirmed', seated:'badge-seated', cancelled:'badge-cancelled' };
+    const DAYS_FR = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+
+    let allReservations = [];
+    let activeFilter    = 'all';
+    let activeDate      = null;
+    let sbClient        = null;
+    let audioCtx        = null;
+
+    function initDashboard() {
+      setHeaderDate();
+      buildDateTabs();
+      updateManualSlots();
+
+      const cfg = window.SUPABASE_CONFIG;
+      if (cfg && cfg.url && !cfg.url.includes('VOTRE')) {
+        sbClient = window.supabase.createClient(cfg.url, cfg.key);
+        loadReservations();
+        subscribeRealtime();
+      } else {
+        loadDemoData();
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('mDate').value = today;
+    }
+
+    function setHeaderDate() {
+      const opts = { weekday:'long', day:'numeric', month:'long', year:'numeric' };
+      const str = new Date().toLocaleDateString('fr-CH', opts);
+      document.getElementById('headerDate').textContent = str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function buildDateTabs() {
+      const container = document.getElementById('dateTabs');
+      container.innerHTML = '';
+      const today = new Date(); today.setHours(0,0,0,0);
+      activeDate = today.toISOString().split('T')[0];
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const iso = d.toISOString().split('T')[0];
+        const dow = DAYS_FR[d.getDay()];
+        const day = d.getDate();
+
+        const btn = document.createElement('button');
+        btn.dataset.iso = iso;
+        btn.onclick = () => setActiveDate(iso);
+        btn.className = `flex flex-col items-center justify-center px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+          i === 0 ? 'bg-[#1c1917] text-white border-transparent' : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
+        }`;
+        btn.innerHTML = `<span class="opacity-70">${dow}</span><span>${day}</span>`;
+        container.appendChild(btn);
+      }
+    }
+
+    function setActiveDate(iso) {
+      activeDate = iso;
+      const picker = document.getElementById('customDatePicker');
+      if (picker) picker.value = iso;
+
+      document.querySelectorAll('#dateTabs button').forEach(b => {
+        const active = b.dataset.iso === iso;
+        b.className = `flex flex-col items-center justify-center px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+          active ? 'bg-[#1c1917] text-white border-transparent' : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
+        }`;
+      });
+      renderList();
+    }
+
+    async function loadReservations() {
+      try {
+        const { data, error } = await sbClient.from('reservations').select('*').order('reservation_time', { ascending: true });
+        if (error) throw error;
+        allReservations = data || [];
+        renderList();
+      } catch(e) { console.error(e); }
+    }
+
+    function loadDemoData() {
+      const today = new Date().toISOString().split('T')[0];
+      allReservations = [
+        { id:'1', customer_name:'Marie Fontaine',  customer_phone:'+41 79 123 45 67', guests_count:2, reservation_date:today, service_type:'midi', reservation_time:'12:00', notes:null, status:'confirmed' },
+        { id:'2', customer_name:'Jean-Luc Moreau', customer_phone:'+41 76 987 65 43', guests_count:4, reservation_date:today, service_type:'midi', reservation_time:'12:30', notes:'Allergie gluten', status:'pending' },
+        { id:'3', customer_name:'Sophie Blanc',    customer_phone:'+41 78 555 00 11', guests_count:3, reservation_date:today, service_type:'soir', reservation_time:'19:30', notes:null, status:'pending' },
+      ];
+      renderList();
+      setRTStatus(true, '⚡ Démo locale');
+    }
+
+    function subscribeRealtime() {
+      sbClient.channel('reservations-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, payload => {
+          if (payload.eventType === 'INSERT') {
+            allReservations.unshift(payload.new);
+            playNotificationSound();
+            showToast('🔔', `Nouvelle réservation · ${payload.new.customer_name}`);
+          } else if (payload.eventType === 'UPDATE') {
+            const idx = allReservations.findIndex(r => r.id === payload.new.id);
+            if (idx > -1) allReservations[idx] = payload.new;
+          } else if (payload.eventType === 'DELETE') {
+            allReservations = allReservations.filter(r => r.id !== payload.old.id);
+          }
+          renderList();
+        })
+        .subscribe(status => {
+          setRTStatus(status === 'SUBSCRIBED', status === 'SUBSCRIBED' ? 'En direct' : 'Connexion...');
+        });
+    }
+
+    function setRTStatus(connected, label) {
+      document.getElementById('rtDot').classList.toggle('disconnected', !connected);
+      document.getElementById('rtLabel').textContent = label;
+    }
+
+    function renderList() {
+      const list = document.getElementById('reservationList');
+      const empty = document.getElementById('emptyState');
+      list.innerHTML = '';
+
+      const filtered = allReservations.filter(r => {
+        if (r.reservation_date !== activeDate) return false;
+        if (activeFilter !== 'all' && r.service_type !== activeFilter) return false;
+        return true;
+      }).sort((a,b) => (a.reservation_time || '').localeCompare(b.reservation_time || ''));
+
+      if (filtered.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      filtered.forEach(r => {
+        const card = document.createElement('div');
+        card.className = `bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden flex transition-all ${
+          r.status === 'cancelled' ? 'card-cancelled' : ''
+        }`;
+        const stripe = r.service_type === 'midi' ? 'bg-amber-400' : 'bg-indigo-500';
+        const note = r.notes ? `<span class="inline-block bg-amber-50 text-amber-900 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium">⚠️ ${r.notes}</span>` : '';
+
+        card.innerHTML = `
+          <div class="w-2 flex-shrink-0 ${stripe}"></div>
+          <div class="flex-1 p-4">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex items-baseline gap-2">
+                <span class="text-2xl font-extrabold text-stone-900">${r.reservation_time}</span>
+                <span class="text-xs font-semibold text-stone-500">${r.service_type === 'midi' ? '🌞' : '🌙'} ${r.guests_count} pers.</span>
+              </div>
+              <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold ${STATUS_BADGE[r.status]}">${STATUS_LABELS[r.status] || r.status}</span>
+            </div>
+
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <p class="font-bold text-sm text-stone-900">${r.customer_name}</p>
+                <a href="tel:${r.customer_phone}" class="text-xs text-blue-600 hover:underline font-medium">${r.customer_phone}</a>
+              </div>
+              ${note}
+            </div>
+
+            <div class="flex gap-2">
+              <button class="action-btn btn-confirm ${r.status === 'confirmed' ? 'active-state' : ''}" onclick="updateStatus('${r.id}', 'confirmed')">
+                Confirmer
+              </button>
+              <button class="action-btn btn-seat ${r.status === 'seated' ? 'active-state' : ''}" onclick="updateStatus('${r.id}', 'seated')">
+                Installer
+              </button>
+              <button class="action-btn btn-cancel ${r.status === 'cancelled' ? 'active-state' : ''}" onclick="updateStatus('${r.id}', 'cancelled')">
+                Annuler
+              </button>
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    async function updateStatus(id, newStatus) {
+      const idx = allReservations.findIndex(r => r.id === id);
+      if (idx > -1) { allReservations[idx].status = newStatus; renderList(); }
+      if (sbClient) {
+        await sbClient.from('reservations').update({ status: newStatus }).eq('id', id);
+      }
+    }
+
+    function setFilter(f) {
+      activeFilter = f;
+      ['all','midi','soir'].forEach(k => {
+        document.getElementById('tab-' + k).classList.toggle('active', k === f);
+      });
+      renderList();
+    }
+
+    function openManualModal() { document.getElementById('manualModal').classList.add('open'); }
+    function closeManualModal() { document.getElementById('manualModal').classList.remove('open'); }
+
+    function updateManualSlots() {
+      const svc = document.getElementById('mService').value;
+      const sel = document.getElementById('mTime');
+      sel.innerHTML = SLOTS[svc].map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    async function submitManual() {
+      const name = document.getElementById('mName').value.trim();
+      const phone = document.getElementById('mPhone').value.trim();
+      const guests = parseInt(document.getElementById('mGuests').value);
+      const date = document.getElementById('mDate').value;
+      const service = document.getElementById('mService').value;
+      const time = document.getElementById('mTime').value;
+      const notes = document.getElementById('mNotes').value.trim();
+      const err = document.getElementById('mError');
+      err.classList.add('hidden');
+
+      if (!name || !phone || !date) {
+        err.textContent = 'Nom, téléphone et date obligatoires.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      const payload = {
+        customer_name: name, customer_phone: phone, customer_email: null,
+        guests_count: guests, reservation_date: date, service_type: service,
+        reservation_time: time, notes: notes || null, status: 'confirmed'
+      };
+
+      if (sbClient) {
+        await sbClient.from('reservations').insert([payload]);
+      } else {
+        allReservations.unshift({ ...payload, id: Date.now().toString() });
+        renderList();
+      }
+      closeManualModal();
+      showToast('✅', 'Réservation enregistrée');
+    }
+
+    function showToast(icon, msg) {
+      const el = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = icon;
+      document.getElementById('toastMsg').textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    function playNotificationSound() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        [[523.25, 0, 0.12], [659.25, 0.14, 0.12], [783.99, 0.28, 0.18]].forEach(([freq, delay, dur]) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.type = 'sine'; osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, now + delay);
+          gain.gain.linearRampToValueAtTime(0.12, now + delay + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
+          osc.start(now + delay); osc.stop(now + delay + dur + 0.02);
+        });
+      } catch(e) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', checkAuth);
+    document.addEventListener('click', () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }, { once: true });
+  </script>
+</body>
+</html>
