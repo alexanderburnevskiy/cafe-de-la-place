@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Dashboard — Café de la Place</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    /* ── Status colors ──────────────────────────────────── */
+    .badge-pending   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .badge-confirmed { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+    .badge-seated    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-cancelled { background: #f4f4f5; color: #71717a; border: 1px solid #e4e4e7; text-decoration: line-through; }
+
+    /* ── Card entry animation ───────────────────────────── */
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-18px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .card-enter { animation: slideDown 0.42s cubic-bezier(0.16,1,0.3,1) both; }
+
+    /* ── Card cancel dim ────────────────────────────────── */
+    .card-cancelled { opacity: 0.55; }
+
+    /* ── Filter tab ─────────────────────────────────────── */
+    .filter-tab {
+      padding: 0.55rem 1.1rem; border-radius: 9999px; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; border: none;
+      background: transparent; color: #71717a;
+      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+    }
+    .filter-tab.active { background: #1c1917; color: #fff; }
+
+    /* ── Action buttons ─────────────────────────────────── */
+    .action-btn {
+      flex: 1; padding: 0.75rem 0.5rem; border-radius: 0.75rem; font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; border: none; transition: all 0.16s ease;
+      display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .action-btn:active { transform: scale(0.96); }
+    .btn-confirm { background: #eff6ff; color: #1d4ed8; }
+    .btn-confirm:hover { background: #dbeafe; }
+    .btn-confirm.active-state { background: #1d4ed8; color: #fff; }
+    .btn-seat    { background: #f0fdf4; color: #15803d; }
+    .btn-seat:hover { background: #dcfce7; }
+    .btn-seat.active-state { background: #15803d; color: #fff; }
+    .btn-cancel  { background: #f4f4f5; color: #71717a; }
+    .btn-cancel:hover { background: #fee2e2; color: #b91c1c; }
+    .btn-cancel.active-state { background: #f4f4f5; color: #71717a; }
+
+    /* ── Toast notification ─────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 100;
+      background: #1c1917; color: #fff; padding: 0.85rem 1.25rem;
+      border-radius: 1rem; font-size: 0.875rem; font-weight: 500;
+      display: flex; align-items: center; gap: 0.6rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Empty state ────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #a1a1aa; }
+
+    /* ── Manual modal ───────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px);
+      display: flex; align-items: flex-end; justify-content: center; z-index: 60;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-sheet {
+      background: #fff; border-radius: 1.5rem 1.5rem 0 0; padding: 1.5rem;
+      width: 100%; max-width: 540px; max-height: 92vh; overflow-y: auto;
+      transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+    .field-input {
+      width: 100%; padding: 0.8rem 1rem; border-radius: 0.7rem;
+      border: 1.5px solid #e5e5e5; font-family: inherit; font-size: 0.95rem;
+      color: #1c1917; outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field-input:focus { border-color: #a16207; box-shadow: 0 0 0 3px rgba(161,98,7,0.1); }
+    .field-label { font-size: 0.82rem; font-weight: 600; color: #52525b; margin-bottom: 0.3rem; display: block; }
+
+    /* ── Loading skeleton ───────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f4f4f5 25%, #e5e5e5 50%, #f4f4f5 75%);
+      background-size: 800px 100%; animation: shimmer 1.4s infinite;
+      border-radius: 0.5rem;
+    }
+
+    /* ── Realtime pulse dot ─────────────────────────────── */
+    @keyframes pulse-ring { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.5); } }
+    .rt-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse-ring 2s ease infinite; }
+    .rt-dot.disconnected { background: #ef4444; animation: none; }
+  </style>
+</head>
+<body class="bg-[#f6f5f3] min-h-screen">
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-zinc-200/80">
+    <div class="max-w-2xl mx-auto px-4 py-3">
+      <!-- Top row -->
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg">☕</span>
+            <h1 class="font-bold text-zinc-900 text-base leading-tight">Café de la Place</h1>
+          </div>
+          <p class="text-xs text-zinc-400 mt-0.5 ml-7" id="headerDate"></p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 text-xs text-zinc-500" id="rtStatus">
+            <div class="rt-dot disconnected" id="rtDot"></div>
+            <span id="rtLabel">Hors ligne</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter + action row -->
+      <div class="flex items-center gap-2">
+        <div class="flex items-center bg-zinc-100 rounded-full p-1 gap-0.5 flex-1">
+          <button class="filter-tab active" id="tab-all"  onclick="setFilter('all')">Tout</button>
+          <button class="filter-tab"        id="tab-midi" onclick="setFilter('midi')">🌞 Midi</button>
+          <button class="filter-tab"        id="tab-soir" onclick="setFilter('soir')">🌙 Soir</button>
+        </div>
+        <button onclick="openManualModal()"
+          class="flex items-center gap-1.5 bg-[#92400e] text-white rounded-full px-3.5 py-2 text-sm font-semibold whitespace-nowrap
+                 hover:bg-[#7c2d12] transition-colors active:scale-95">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Réservation
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ════════════════ DATE TABS ════════════════ -->
+  <div class="sticky top-[108px] z-30 bg-[#f6f5f3] border-b border-zinc-200/60">
+    <div class="max-w-2xl mx-auto px-4 overflow-x-auto">
+      <div class="flex gap-2 py-2" id="dateTabs" style="min-width: max-content;"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════ RESERVATION LIST ════════════════ -->
+  <main class="max-w-2xl mx-auto px-4 py-4 pb-24">
+    <div id="loadingSkeletons">
+      <div class="bg-white rounded-2xl p-5 mb-3 skeleton h-32"></div>
+      <div class="bg-white rounded-2xl p-5 mb-3 skeleton h-32 opacity-70"></div>
+      <div class="bg-white rounded-2xl p-5 mb-3 skeleton h-28 opacity-40"></div>
+    </div>
+    <div id="reservationList" class="space-y-3 hidden"></div>
+    <div id="emptyState" class="empty-state hidden">
+      <div class="text-4xl mb-3">📋</div>
+      <p class="font-semibold text-zinc-600">Aucune réservation</p>
+      <p class="text-sm mt-1">pour ce service / cette date</p>
+    </div>
+  </main>
+
+  <!-- ════════════════ TOAST ════════════════ -->
+  <div class="toast" id="toast">
+    <span id="toastIcon">🔔</span>
+    <span id="toastMsg">Nouvelle réservation !</span>
+  </div>
+
+  <!-- ════════════════ MANUAL RESERVATION MODAL ════════════════ -->
+  <div class="modal-overlay" id="manualModal">
+    <div class="modal-sheet">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-zinc-900">Réservation manuelle</h2>
+        <button onclick="closeManualModal()" class="text-zinc-400 hover:text-zinc-700 transition-colors">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="field-label">Prénom et nom *</label>
+          <input class="field-input" id="mName" type="text" placeholder="Marie Dupont" />
+        </div>
+        <div>
+          <label class="field-label">Téléphone *</label>
+          <input class="field-input" id="mPhone" type="tel" placeholder="+41 79 123 45 67" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label">Personnes *</label>
+            <select class="field-input" id="mGuests">
+              <option value="">—</option>
+              <option>1</option><option>2</option><option>3</option>
+              <option>4</option><option>5</option><option>6</option>
+              <option>7</option><option>8</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Date *</label>
+            <input class="field-input" id="mDate" type="date" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label">Service *</label>
+            <select class="field-input" id="mService" onchange="updateManualSlots()">
+              <option value="">—</option>
+              <option value="midi">Midi</option>
+              <option value="soir">Soir</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">Horaire *</label>
+            <select class="field-input" id="mTime">
+              <option value="">— sélectionner service —</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Remarques</label>
+          <input class="field-input" id="mNotes" type="text" placeholder="Allergie, occasion spéciale…" />
+        </div>
+        <p id="mError" class="text-red-500 text-sm hidden"></p>
+        <button onclick="submitManual()"
+          class="w-full mt-2 bg-[#92400e] text-white rounded-xl py-3.5 font-semibold text-base
+                 hover:bg-[#7c2d12] transition-colors active:scale-98"
+          id="mSubmitBtn">
+          Enregistrer la réservation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ═══════════════════════════════════════════════════════════
+  //  CONSTANTS
+  // ═══════════════════════════════════════════════════════════
+  const SLOTS = {
+    midi: ['11:45','12:00','12:15','12:30','13:00'],
+    soir: ['18:30','19:00','19:30','20:00','20:30'],
+  };
+  const STATUS_LABELS = { pending:'En attente', confirmed:'Confirmé', seated:'Installé', cancelled:'Annulé' };
+  const STATUS_BADGE  = { pending:'badge-pending', confirmed:'badge-confirmed', seated:'badge-seated', cancelled:'badge-cancelled' };
+  const DAYS_FR = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+
+  // ═══════════════════════════════════════════════════════════
+  //  STATE
+  // ═══════════════════════════════════════════════════════════
+  let allReservations = [];
+  let activeFilter    = 'all';
+  let activeDate      = null;  // ISO string YYYY-MM-DD
+  let sbClient        = null;
+  let audioCtx        = null;
+
+  // ═══════════════════════════════════════════════════════════
+  //  INIT
+  // ═══════════════════════════════════════════════════════════
+  document.addEventListener('DOMContentLoaded', async () => {
+    setHeaderDate();
+    buildDateTabs();
+
+    const cfg = window.SUPABASE_CONFIG;
+    if (cfg && cfg.url && !cfg.url.includes('VOTRE')) {
+      sbClient = window.supabase.createClient(cfg.url, cfg.key);
+      await loadReservations();
+      subscribeRealtime();
+    } else {
+      loadDemoData();
+    }
+
+    // Manual modal: set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('mDate').value = today;
+    document.getElementById('mDate').min = today;
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  //  HEADER DATE
+  // ═══════════════════════════════════════════════════════════
+  function setHeaderDate() {
+    const opts = { weekday:'long', day:'numeric', month:'long', year:'numeric' };
+    const str  = new Date().toLocaleDateString('fr-CH', opts);
+    document.getElementById('headerDate').textContent = capitalize(str);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  DATE TABS  (today + next 6 days)
+  // ═══════════════════════════════════════════════════════════
+  function buildDateTabs() {
+    const container = document.getElementById('dateTabs');
+    container.innerHTML = '';
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    activeDate = today.toISOString().split('T')[0];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const iso  = d.toISOString().split('T')[0];
+      const dow  = DAYS_FR[d.getDay()];
+      const day  = d.getDate();
+      const isTod = i === 0;
+
+      const btn = document.createElement('button');
+      btn.id = 'dtab-' + iso;
+      btn.dataset.iso = iso;
+      btn.onclick = () => setActiveDate(iso);
+      btn.className = [
+        'flex flex-col items-center justify-center px-4 py-1.5 rounded-full',
+        'text-sm font-semibold transition-all duration-150 border',
+        isTod
+          ? 'bg-[#1c1917] text-white border-transparent'
+          : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400',
+      ].join(' ');
+      btn.innerHTML = `<span class="text-xs opacity-70">${dow}</span><span>${day}</span>`;
+      container.appendChild(btn);
+    }
+  }
+
+  function setActiveDate(iso) {
+    activeDate = iso;
+    document.querySelectorAll('#dateTabs button').forEach(b => {
+      const active = b.dataset.iso === iso;
+      b.className = b.className.replace(/bg-\S+|text-\S+|border-\S+/g, '');
+      b.classList.add(
+        'flex','flex-col','items-center','justify-center','px-4','py-1.5','rounded-full',
+        'text-sm','font-semibold','transition-all','duration-150','border',
+        ...(active ? ['bg-[#1c1917]','text-white','border-transparent']
+                   : ['bg-white','text-zinc-600','border-zinc-200','hover:border-zinc-400']),
+      );
+    });
+    renderList();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  LOAD
+  // ═══════════════════════════════════════════════════════════
+  async function loadReservations() {
+    try {
+      const { data, error } = await sbClient
+        .from('reservations')
+        .select('*')
+        .order('reservation_time', { ascending: true });
+      if (error) throw error;
+      allReservations = data || [];
+      renderList();
+    } catch(e) {
+      console.error(e);
+      showToast('⚠️', 'Erreur de chargement');
+    }
+  }
+
+  function loadDemoData() {
+    const today = new Date().toISOString().split('T')[0];
+    allReservations = [
+      { id:'1', customer_name:'Marie Fontaine',  customer_phone:'+41 79 123 45 67', guests_count:2, reservation_date:today, service_type:'midi', reservation_time:'12:00', notes:null,              status:'confirmed' },
+      { id:'2', customer_name:'Jean-Luc Moreau', customer_phone:'+41 76 987 65 43', guests_count:4, reservation_date:today, service_type:'midi', reservation_time:'12:30', notes:'Allergie gluten', status:'pending'   },
+      { id:'3', customer_name:'Sophie Blanc',    customer_phone:'+41 78 555 00 11', guests_count:3, reservation_date:today, service_type:'soir', reservation_time:'19:30', notes:null,              status:'pending'   },
+      { id:'4', customer_name:'Daniel Müller',   customer_phone:'+41 79 222 33 44', guests_count:6, reservation_date:today, service_type:'soir', reservation_time:'20:00', notes:'Anniversaire',   status:'confirmed' },
+    ];
+    renderList();
+    setRTStatus(true, '⚡ Démo locale');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  REALTIME SUBSCRIPTION
+  // ═══════════════════════════════════════════════════════════
+  function subscribeRealtime() {
+    sbClient.channel('reservations-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, payload => {
+        handleRealtimeEvent(payload);
+      })
+      .subscribe(status => {
+        setRTStatus(status === 'SUBSCRIBED', status === 'SUBSCRIBED' ? 'Temps réel' : 'Connexion…');
+      });
+  }
+
+  function handleRealtimeEvent(payload) {
+    const { eventType, new: rec, old } = payload;
+    if (eventType === 'INSERT') {
+      allReservations.unshift(rec);
+      playNotificationSound();
+      showToast('🔔', `Nouvelle réservation · ${rec.customer_name}`);
+      // Animate new card
+      setTimeout(() => {
+        const card = document.getElementById('card-' + rec.id);
+        if (card) card.classList.add('card-enter');
+      }, 50);
+    } else if (eventType === 'UPDATE') {
+      const idx = allReservations.findIndex(r => r.id === rec.id);
+      if (idx > -1) allReservations[idx] = rec;
+    } else if (eventType === 'DELETE') {
+      allReservations = allReservations.filter(r => r.id !== old.id);
+    }
+    renderList();
+  }
+
+  function setRTStatus(connected, label) {
+    const dot   = document.getElementById('rtDot');
+    const lbl   = document.getElementById('rtLabel');
+    dot.classList.toggle('disconnected', !connected);
+    lbl.textContent = label || (connected ? 'Temps réel' : 'Hors ligne');
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  RENDER LIST
+  // ═══════════════════════════════════════════════════════════
+  function getFiltered() {
+    return allReservations.filter(r => {
+      if (r.reservation_date !== activeDate) return false;
+      if (activeFilter !== 'all' && r.service_type !== activeFilter) return false;
+      return true;
+    }).sort((a,b) => a.reservation_time.localeCompare(b.reservation_time));
+  }
+
+  function renderList() {
+    const list  = document.getElementById('reservationList');
+    const empty = document.getElementById('emptyState');
+    const skel  = document.getElementById('loadingSkeletons');
+    skel.classList.add('hidden');
+    list.classList.remove('hidden');
+
+    const filtered = getFiltered();
+    list.innerHTML = '';
+
+    if (filtered.length === 0) {
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    filtered.forEach(r => {
+      list.appendChild(buildCard(r));
+    });
+  }
+
+  function buildCard(r) {
+    const isCancelled = r.status === 'cancelled';
+    const card = document.createElement('div');
+    card.id = 'card-' + r.id;
+    card.className = [
+      'bg-white rounded-2xl border border-zinc-100 overflow-hidden',
+      'shadow-[0_2px_12px_rgba(0,0,0,0.06)]',
+      'transition-all duration-300',
+      isCancelled ? 'card-cancelled' : '',
+    ].join(' ');
+
+    // Service stripe
+    const stripeColor = r.service_type === 'midi' ? 'bg-amber-400' : 'bg-indigo-400';
+
+    // Notes badge
+    const noteHtml = r.notes
+      ? `<span class="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 rounded-full px-2 py-0.5 text-xs font-medium">
+           ⚠️ ${escHtml(r.notes)}
+         </span>`
+      : '';
+
+    // Status badge
+    const badgeCls = STATUS_BADGE[r.status] || 'badge-pending';
+    const badgeLbl = STATUS_LABELS[r.status] || r.status;
+
+    // Service icon
+    const svcIcon = r.service_type === 'midi' ? '🌞' : '🌙';
+
+    card.innerHTML = `
+      <div class="flex">
+        <div class="w-1.5 flex-shrink-0 ${stripeColor} rounded-l-none"></div>
+        <div class="flex-1 p-4">
+
+          <!-- Top row: time + guests + status -->
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-baseline gap-2">
+              <span class="text-3xl font-extrabold tracking-tight text-zinc-900 leading-none">${r.reservation_time}</span>
+              <span class="text-sm font-semibold text-zinc-500">${svcIcon} ${r.guests_count} pers.</span>
+            </div>
+            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${badgeCls}">
+              ${badgeLbl}
+            </span>
+          </div>
+
+          <!-- Guest info -->
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-9 h-9 rounded-full bg-zinc-100 flex items-center justify-center text-base font-bold text-zinc-600 flex-shrink-0">
+              ${r.customer_name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p class="font-semibold text-zinc-900 text-base leading-tight">${escHtml(r.customer_name)}</p>
+              <a href="tel:${r.customer_phone}" class="text-sm text-blue-600 hover:underline font-medium">${escHtml(r.customer_phone)}</a>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          ${noteHtml ? `<div class="mb-3">${noteHtml}</div>` : ''}
+
+          <!-- Action buttons -->
+          <div class="flex gap-2 mt-3">
+            <button class="action-btn btn-confirm ${r.status === 'confirmed' ? 'active-state' : ''}"
+                    onclick="updateStatus('${r.id}', 'confirmed')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              Confirmer
+            </button>
+            <button class="action-btn btn-seat ${r.status === 'seated' ? 'active-state' : ''}"
+                    onclick="updateStatus('${r.id}', 'seated')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Installer
+            </button>
+            <button class="action-btn btn-cancel ${r.status === 'cancelled' ? 'active-state' : ''}"
+                    onclick="updateStatus('${r.id}', 'cancelled')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    return card;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  STATUS UPDATE
+  // ═══════════════════════════════════════════════════════════
+  async function updateStatus(id, newStatus) {
+    // Optimistic local update
+    const idx = allReservations.findIndex(r => r.id === id);
+    if (idx > -1) {
+      allReservations[idx].status = newStatus;
+      renderList();
+    }
+
+    if (sbClient) {
+      const { error } = await sbClient
+        .from('reservations')
+        .update({ status: newStatus })
+        .eq('id', id);
+      if (error) {
+        console.error(error);
+        showToast('⚠️', 'Erreur de mise à jour');
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  FILTER
+  // ═══════════════════════════════════════════════════════════
+  function setFilter(f) {
+    activeFilter = f;
+    ['all','midi','soir'].forEach(k => {
+      document.getElementById('tab-' + k).classList.toggle('active', k === f);
+    });
+    renderList();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  MANUAL RESERVATION MODAL
+  // ═══════════════════════════════════════════════════════════
+  function openManualModal() {
+    document.getElementById('manualModal').classList.add('open');
+  }
+  function closeManualModal() {
+    document.getElementById('manualModal').classList.remove('open');
+  }
+  // Close on backdrop click
+  document.getElementById('manualModal').addEventListener('click', function(e) {
+    if (e.target === this) closeManualModal();
+  });
+
+  function updateManualSlots() {
+    const svc = document.getElementById('mService').value;
+    const sel = document.getElementById('mTime');
+    sel.innerHTML = svc
+      ? SLOTS[svc].map(s => `<option value="${s}">${s}</option>`).join('')
+      : '<option value="">— sélectionner service —</option>';
+  }
+
+  async function submitManual() {
+    const name    = document.getElementById('mName').value.trim();
+    const phone   = document.getElementById('mPhone').value.trim();
+    const guests  = parseInt(document.getElementById('mGuests').value);
+    const date    = document.getElementById('mDate').value;
+    const service = document.getElementById('mService').value;
+    const time    = document.getElementById('mTime').value;
+    const notes   = document.getElementById('mNotes').value.trim();
+    const errEl   = document.getElementById('mError');
+    const btn     = document.getElementById('mSubmitBtn');
+
+    errEl.classList.add('hidden');
+    if (!name || !phone || !guests || !date || !service || !time) {
+      errEl.textContent = 'Veuillez remplir tous les champs obligatoires.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
+
+    const payload = {
+      customer_name: name, customer_phone: phone, customer_email: null,
+      guests_count: guests, reservation_date: date, service_type: service,
+      reservation_time: time, notes: notes || null, status: 'confirmed',
+    };
+
+    try {
+      if (sbClient) {
+        const { error } = await sbClient.from('reservations').insert([payload]);
+        if (error) throw error;
+      } else {
+        // Demo mode
+        allReservations.unshift({ ...payload, id: Date.now().toString(), created_at: new Date().toISOString() });
+        renderList();
+        showToast('✅', 'Réservation enregistrée');
+      }
+      closeManualModal();
+      // Reset form
+      ['mName','mPhone','mNotes'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('mGuests').value = '';
+      document.getElementById('mService').value = '';
+      document.getElementById('mTime').innerHTML = '<option value="">— sélectionner service —</option>';
+    } catch(e) {
+      console.error(e);
+      errEl.textContent = 'Erreur lors de l\'enregistrement.';
+      errEl.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Enregistrer la réservation';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  TOAST
+  // ═══════════════════════════════════════════════════════════
+  let toastTimer = null;
+  function showToast(icon, msg) {
+    const el = document.getElementById('toast');
+    document.getElementById('toastIcon').textContent = icon;
+    document.getElementById('toastMsg').textContent  = msg;
+    el.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  WEB AUDIO NOTIFICATION SOUND
+  // ═══════════════════════════════════════════════════════════
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  function playNotificationSound() {
+    try {
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const now = audioCtx.currentTime;
+
+      // Two soft ascending tones — warm & unobtrusive
+      [[523.25, 0, 0.12], [659.25, 0.14, 0.12], [783.99, 0.28, 0.18]]
+        .forEach(([freq, delay, dur]) => {
+          const osc  = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, now + delay);
+          gain.gain.linearRampToValueAtTime(0.12, now + delay + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
+          osc.start(now + delay);
+          osc.stop(now + delay + dur + 0.02);
+        });
+    } catch(e) { /* audio not critical */ }
+  }
+
+  // Unlock audio context on first tap (iOS requirement)
+  document.addEventListener('touchstart', initAudio, { once: true });
+  document.addEventListener('click',      initAudio, { once: true });
+
+  // ═══════════════════════════════════════════════════════════
+  //  HELPERS
+  // ═══════════════════════════════════════════════════════════
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  </script>
+</body>
+</html>
