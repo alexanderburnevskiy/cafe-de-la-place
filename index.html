@@ -49,6 +49,22 @@
     .num-tile.selected { background: #92400e; border-color: #92400e; color: #fff; transform: scale(1.04); }
     .num-tile.col-span-4 { aspect-ratio: auto; min-height: 3.25rem; }
 
+    .sugg-card {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem; border-radius: 0.875rem; border: 1.5px solid #e7e5e4;
+      background: #fafaf9; cursor: pointer; transition: all 0.16s ease; text-align: left;
+    }
+    .sugg-card:hover {
+      background: #fff; border-color: #92400e; box-shadow: 0 4px 14px rgba(146,64,14,0.1);
+      transform: translateY(-1px);
+    }
+    .sugg-card.primary-sugg {
+      background: #fffbeb; border-color: #fde68a;
+    }
+    .sugg-card.primary-sugg:hover {
+      background: #fef3c7; border-color: #92400e;
+    }
+
     .day-cell {
       aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
       justify-content: center; border-radius: 0.5rem; cursor: pointer;
@@ -355,7 +371,16 @@
           ‹ Retour
         </button>
         <span class="text-xs font-semibold uppercase tracking-wider text-stone-400">Étape 2 sur 4</span>
-        <h3 class="text-2xl font-bold text-stone-900 mt-1 mb-5">Quelle date ?</h3>
+        <h3 class="text-2xl font-bold text-stone-900 mt-1 mb-4">Quelle date ?</h3>
+
+        <!-- Smart suggestions -->
+        <div id="quickSuggestions" class="mb-4"></div>
+
+        <div class="flex items-center gap-2 my-4 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+          <div class="flex-1 h-px bg-stone-200"></div>
+          <span>ou choisir dans le calendrier</span>
+          <div class="flex-1 h-px bg-stone-200"></div>
+        </div>
 
         <div class="flex items-center justify-between mb-4">
           <button class="w-8 h-8 rounded-full border border-stone-200 flex items-center justify-center text-sm" id="calPrev" onclick="shiftMonth(-1)">‹</button>
@@ -494,7 +519,154 @@
           bar.className = i <= n ? 'h-1.5 flex-1 rounded-full bg-amber-800 transition-colors' : 'h-1.5 flex-1 rounded-full bg-stone-200 transition-colors';
         }
       }
+      if (n === 2) renderSuggestions();
       if (n === 4) renderSummary();
+    }
+
+    function isClosedDay(d) {
+      const dow = d.getDay();
+      return dow === 0 || dow === 1; // Dimanche & Lundi
+    }
+
+    function getSuggestions() {
+      const list = [];
+      const now = new Date();
+      const currentHour = now.getHours();
+
+      // 1. Aujourd'hui
+      if (!isClosedDay(now)) {
+        if (currentHour < 13) {
+          list.push({
+            icon: '☀️',
+            label: "Aujourd'hui · Midi",
+            sublabel: "Déjeuner de saison",
+            time: '12:15',
+            service: 'midi',
+            date: new Date(now),
+            badge: '⚡ Disponible'
+          });
+        }
+        if (currentHour < 20) {
+          list.push({
+            icon: '🌙',
+            label: "Aujourd'hui · Ce soir",
+            sublabel: "Dîner au bistrot",
+            time: '19:30',
+            service: 'soir',
+            date: new Date(now),
+            badge: '🔥 Recommandé'
+          });
+        }
+      }
+
+      // 2. Demain
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      if (!isClosedDay(tomorrow)) {
+        list.push({
+          icon: '🌙',
+          label: "Demain · Soir",
+          sublabel: "Table pour dîner",
+          time: '19:30',
+          service: 'soir',
+          date: tomorrow,
+          badge: null
+        });
+      }
+
+      // 3. Prochain Vendredi ou Samedi
+      for (let i = 1; i <= 6; i++) {
+        const nextD = new Date(now);
+        nextD.setDate(now.getDate() + i);
+        const dow = nextD.getDay();
+        if (dow === 5 || dow === 6) {
+          if (nextD.toDateString() !== tomorrow.toDateString() || isClosedDay(tomorrow)) {
+            list.push({
+              icon: '✨',
+              label: dow === 5 ? "Ce vendredi soir" : "Ce samedi soir",
+              sublabel: "Ambiance gourmande",
+              time: '19:30',
+              service: 'soir',
+              date: nextD,
+              badge: 'Week-end'
+            });
+            break;
+          }
+        }
+      }
+
+      // Si fermé aujourd'hui (dimanche ou lundi)
+      if (list.length === 0 || isClosedDay(now)) {
+        for (let i = 1; i <= 3; i++) {
+          const nextD = new Date(now);
+          nextD.setDate(now.getDate() + i);
+          if (!isClosedDay(nextD)) {
+            list.unshift({
+              icon: '📅',
+              label: "Prochain service : Mardi",
+              sublabel: "Réouverture du bistrot",
+              time: '19:30',
+              service: 'soir',
+              date: nextD,
+              badge: 'Prochaine ouverture'
+            });
+            break;
+          }
+        }
+      }
+
+      return list.slice(0, 3);
+    }
+
+    function renderSuggestions() {
+      const box = document.getElementById('quickSuggestions');
+      if (!box) return;
+      box.innerHTML = '';
+
+      const suggestions = getSuggestions();
+      if (suggestions.length === 0) return;
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between mb-2';
+      header.innerHTML = `
+        <span class="text-[11px] font-bold uppercase tracking-wider text-amber-900">⚡ Suggestions en 1 clic</span>
+        <span class="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">Date & heure auto</span>
+      `;
+      box.appendChild(header);
+
+      const list = document.createElement('div');
+      list.className = 'space-y-2';
+
+      suggestions.forEach((sug, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sugg-card' + (idx === 0 ? ' primary-sugg' : '');
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-xl leading-none">${sug.icon}</span>
+            <div>
+              <div class="font-bold text-sm text-stone-900 flex items-center gap-2">
+                <span>${sug.label}</span>
+                ${sug.badge ? `<span class="bg-amber-100 text-amber-900 text-[10px] font-semibold px-2 py-0.5 rounded-full">${sug.badge}</span>` : ''}
+              </div>
+              <div class="text-xs text-stone-500 mt-0.5"><strong>${sug.time}</strong> · ${sug.sublabel}</div>
+            </div>
+          </div>
+          <div class="text-xs font-bold text-amber-900 flex items-center gap-1">
+            <span>Choisir</span>
+            <span class="text-sm">›</span>
+          </div>
+        `;
+        btn.onclick = () => {
+          state.date = sug.date;
+          state.service = sug.service;
+          state.time = sug.time;
+          goStep(4);
+        };
+        list.appendChild(btn);
+      });
+
+      box.appendChild(list);
     }
 
     function buildGuestGrid() {
@@ -593,7 +765,12 @@
       const box = document.getElementById('summaryBox');
       if (!state.date) return;
       const str = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
-      box.innerHTML = `📅 <strong>${str}</strong> à <strong>${state.time}</strong> (${state.service === 'midi' ? 'Midi' : 'Soir'}) pour <strong>${state.guests} personne(s)</strong>`;
+      box.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span>📅 <strong>${str}</strong> à <strong>${state.time}</strong> (${state.service === 'midi' ? 'Midi' : 'Soir'}) pour <strong>${state.guests} personne(s)</strong></span>
+          <button type="button" onclick="selectService(state.service || 'soir'); goStep(3);" class="text-[11px] font-bold text-amber-900 underline ml-2 hover:text-amber-700">Modifier</button>
+        </div>
+      `;
     }
 
     async function submitReservation() {

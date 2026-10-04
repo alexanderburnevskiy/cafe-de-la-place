@@ -98,6 +98,24 @@
       font-family: inherit; transition: transform 0.2s, background 0.2s;
     }
     .cdp-floating-trigger:hover { background: #78350f; transform: translateY(-2px); }
+
+    /* Smart Suggestions */
+    .cdp-sugg-btn {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: 12px; border: 1.5px solid #e7e5e4;
+      background: #fafaf9; cursor: pointer; transition: all 0.16s ease; text-align: left;
+      font-family: inherit;
+    }
+    .cdp-sugg-btn:hover {
+      background: #fff; border-color: #92400e; box-shadow: 0 4px 14px rgba(146,64,14,0.1);
+      transform: translateY(-1px);
+    }
+    .cdp-sugg-btn.primary-sugg {
+      background: #fffbeb; border-color: #fde68a;
+    }
+    .cdp-sugg-btn.primary-sugg:hover {
+      background: #fef3c7; border-color: #92400e;
+    }
   `;
 
   const styleEl = document.createElement('style');
@@ -122,6 +140,16 @@
           <button style="background:none;border:none;color:#78716c;font-size:12px;font-weight:600;cursor:pointer;padding:0;margin-bottom:8px;" id="cdpBack1">‹ Retour</button>
           <p style="font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;margin:0 0 4px 0;">Étape 2 / 4</p>
           <h3 style="font-size:1.3rem;font-weight:700;margin:0 0 10px 0;">Quelle date ?</h3>
+
+          <!-- Smart suggestions -->
+          <div id="cdpSuggestionsBox"></div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin:12px 0 10px 0;font-size:10px;font-weight:700;color:#a8a29e;text-transform:uppercase;">
+            <div style="flex:1;height:1px;background:#e7e5e4;"></div>
+            <span>ou choisir dans le calendrier</span>
+            <div style="flex:1;height:1px;background:#e7e5e4;"></div>
+          </div>
+
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <button style="border:1px solid #e7e5e4;background:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;" id="cdpCalPrev">‹</button>
             <span style="font-weight:700;font-size:14px;" id="cdpCalTitle"></span>
@@ -234,10 +262,173 @@
   function setStep(n) {
     document.querySelectorAll('.cdp-step').forEach(s => s.classList.remove('active'));
     document.getElementById('cdpStep' + n).classList.add('active');
+    if (n === 2) {
+      renderSuggestions();
+    }
     if (n === 4) {
       const str = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
-      document.getElementById('cdpSummary').innerHTML = `📅 <strong>${str}</strong> à <strong>${state.time}</strong> (${state.service === 'midi' ? 'Midi' : 'Soir'}) pour <strong>${state.guests} personne(s)</strong>`;
+      document.getElementById('cdpSummary').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span>📅 <strong>${str}</strong> à <strong>${state.time}</strong> (${state.service === 'midi' ? 'Midi' : 'Soir'}) pour <strong>${state.guests} pers.</strong></span>
+          <button type="button" id="cdpModifySlot" style="background:none;border:none;color:#92400e;font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:2px 4px;">Modifier l'heure</button>
+        </div>
+      `;
+      setTimeout(() => {
+        const modBtn = document.getElementById('cdpModifySlot');
+        if (modBtn) {
+          modBtn.onclick = () => {
+            selectSvc(state.service || 'soir');
+            setStep(3);
+          };
+        }
+      }, 50);
     }
+  }
+
+  function isClosedDay(d) {
+    const dow = d.getDay();
+    return dow === 0 || dow === 1; // 0 = Dimanche, 1 = Lundi
+  }
+
+  function getSuggestions() {
+    const list = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // 1. Aujourd'hui
+    if (!isClosedDay(now)) {
+      if (currentHour < 13) {
+        list.push({
+          icon: '☀️',
+          label: "Aujourd'hui · Ce midi",
+          sublabel: "Déjeuner de saison",
+          time: '12:15',
+          service: 'midi',
+          date: new Date(now),
+          badge: '⚡ Disponible'
+        });
+      }
+      if (currentHour < 20) {
+        list.push({
+          icon: '🌙',
+          label: "Aujourd'hui · Ce soir",
+          sublabel: "Dîner au bistrot",
+          time: '19:30',
+          service: 'soir',
+          date: new Date(now),
+          badge: '🔥 Recommandé'
+        });
+      }
+    }
+
+    // 2. Demain
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    if (!isClosedDay(tomorrow)) {
+      list.push({
+        icon: '🌙',
+        label: "Demain · Soir",
+        sublabel: "Table pour dîner",
+        time: '19:30',
+        service: 'soir',
+        date: tomorrow,
+        badge: null
+      });
+    }
+
+    // 3. Prochain Vendredi ou Samedi (soirée la plus demandée)
+    for (let i = 1; i <= 6; i++) {
+      const nextD = new Date(now);
+      nextD.setDate(now.getDate() + i);
+      const dow = nextD.getDay();
+      if (dow === 5 || dow === 6) {
+        if (nextD.toDateString() !== tomorrow.toDateString() || isClosedDay(tomorrow)) {
+          list.push({
+            icon: '✨',
+            label: dow === 5 ? "Ce vendredi soir" : "Ce samedi soir",
+            sublabel: "Ambiance gourmande",
+            time: '19:30',
+            service: 'soir',
+            date: nextD,
+            badge: 'Week-end'
+          });
+          break;
+        }
+      }
+    }
+
+    // Si aujourd'hui est dimanche ou lundi (fermé)
+    if (list.length === 0 || isClosedDay(now)) {
+      for (let i = 1; i <= 3; i++) {
+        const nextD = new Date(now);
+        nextD.setDate(now.getDate() + i);
+        if (!isClosedDay(nextD)) {
+          list.unshift({
+            icon: '📅',
+            label: "Prochain service : Mardi",
+            sublabel: "Réouverture du bistrot",
+            time: '19:30',
+            service: 'soir',
+            date: nextD,
+            badge: 'Prochaine ouverture'
+          });
+          break;
+        }
+      }
+    }
+
+    return list.slice(0, 3);
+  }
+
+  function renderSuggestions() {
+    const box = document.getElementById('cdpSuggestionsBox');
+    if (!box) return;
+    box.innerHTML = '';
+
+    const suggestions = getSuggestions();
+    if (suggestions.length === 0) return;
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;';
+    header.innerHTML = `
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#92400e;letter-spacing:0.5px;">⚡ Suggestions en 1 clic</span>
+      <span style="font-size:10px;color:#78716c;background:#f5f5f4;padding:2px 6px;border-radius:9999px;">Date & heure auto</span>
+    `;
+    box.appendChild(header);
+
+    const listContainer = document.createElement('div');
+    listContainer.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+    suggestions.forEach((sug, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cdp-sugg-btn' + (idx === 0 ? ' primary-sugg' : '');
+      btn.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.2rem;line-height:1;">${sug.icon}</span>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#1c1917;display:flex;align-items:center;gap:6px;">
+              <span>${sug.label}</span>
+              ${sug.badge ? `<span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9999px;">${sug.badge}</span>` : ''}
+            </div>
+            <div style="font-size:11px;color:#78716c;margin-top:1px;"><strong>${sug.time}</strong> · ${sug.sublabel}</div>
+          </div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:2px;">
+          <span>Choisir</span>
+          <span style="font-size:14px;">›</span>
+        </div>
+      `;
+      btn.onclick = () => {
+        state.date = sug.date;
+        state.service = sug.service;
+        state.time = sug.time;
+        setStep(4);
+      };
+      listContainer.appendChild(btn);
+    });
+
+    box.appendChild(listContainer);
   }
 
   document.getElementById('cdpBack1').onclick = () => setStep(1);
