@@ -16,7 +16,7 @@
   };
   const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
-  const state = { guests: null, date: null, service: null, time: null };
+  const state = { guests: null, date: null, service: null, time: null, zone: 'interieur' };
   let calYear, calMonth;
 
   // 1. Inject Fonts & Styles
@@ -24,13 +24,13 @@
     const link = document.createElement('link');
     link.id = 'cdp-fonts';
     link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap';
+    link.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap';
     document.head.appendChild(link);
   }
 
   const css = `
     .cdp-modal-overlay {
-      position: fixed; inset: 0; background: rgba(28, 22, 18, 0.65);
+      position: fixed; inset: 0; background: rgba(28, 22, 18, 0.68);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       display: flex; align-items: center; justify-content: center;
       z-index: 999999; opacity: 0; pointer-events: none;
@@ -86,9 +86,16 @@
     .cdp-svc-tab {
       flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid rgba(92,79,68,0.2);
       background: #fdfbf7; font-weight: 600; cursor: pointer; text-align: center; color: #5c4f44;
-      font-size: 0.85rem; transition: all 0.16s;
+      font-size: 0.82rem; transition: all 0.16s;
     }
     .cdp-svc-tab.selected { background: #2c2520; border-color: #2c2520; color: #fdfbf7; }
+
+    .cdp-zone-btn {
+      padding: 10px; border-radius: 10px; border: 1.5px solid rgba(92,79,68,0.2);
+      background: #fff; cursor: pointer; text-align: left; transition: all 0.15s; font-family: inherit;
+    }
+    .cdp-zone-btn:hover { border-color: #2c2520; }
+    .cdp-zone-btn.selected { border-color: #8b5c2a; background: #fdf8f2; }
 
     .cdp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .cdp-chip {
@@ -150,8 +157,9 @@
       <div class="cdp-modal-box">
         <button class="cdp-close-btn" id="cdpClose">×</button>
 
-        <div style="margin-bottom:12px;">
-          <span class="cdp-serif" style="font-size:1.1rem;color:#2c2520;">Café de la Place</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <img src="assets/logo.png" alt="Café de la Place" style="height:28px;width:auto;object-fit:contain;" />
+          <span class="cdp-serif" style="font-size:1.15rem;color:#2c2520;">Café de la Place</span>
         </div>
 
         <div style="display:flex;gap:4px;margin-bottom:20px;" id="cdpProgress">
@@ -194,16 +202,35 @@
           <p style="font-size:11px;color:#9c8c7c;text-align:center;margin-top:6px;">Fermé le lundi et le dimanche</p>
         </div>
 
-        <!-- Step 3: Service -->
+        <!-- Step 3: Service & Zone -->
         <div class="cdp-step" id="cdpStep3">
           <button style="background:none;border:none;color:#9c8c7c;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;padding:0;margin-bottom:10px;" id="cdpBack2">‹ Retour</button>
           <p style="font-size:10px;font-weight:700;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">Étape 3 / 4</p>
           <h3 class="cdp-serif" style="font-size:1.6rem;margin:0 0 10px 0;color:#2c2520;">Quel créneau ?</h3>
+          
           <div class="cdp-svc-tabs">
             <button class="cdp-svc-tab" id="cdpTabMidi">Midi (11h45 – 13h)</button>
             <button class="cdp-svc-tab" id="cdpTabSoir">Soir (18h30 – 20h30)</button>
           </div>
+          
           <div class="cdp-chips" id="cdpTimeChips"></div>
+
+          <!-- Zone Selection -->
+          <div style="border-top:1px solid rgba(92,79,68,0.15);padding-top:12px;margin-top:14px;">
+            <p style="font-size:10px;font-weight:700;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px 0;">Zone souhaitée</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button type="button" class="cdp-zone-btn selected" id="cdpZoneSalle" onclick="window.cdpSelectZone('interieur')">
+                <span style="font-weight:600;font-size:12px;color:#2c2520;display:block;">🍷 Intérieur</span>
+                <span style="font-size:10px;color:#9c8c7c;">Salle bistrot</span>
+              </button>
+              <button type="button" class="cdp-zone-btn" id="cdpZoneTerrasse" onclick="window.cdpSelectZone('terrasse')">
+                <span style="font-weight:600;font-size:12px;color:#2c2520;display:block;">🌿 Terrasse</span>
+                <span style="font-size:10px;color:#9c8c7c;">Sous les marronniers</span>
+              </button>
+            </div>
+          </div>
+
+          <button class="cdp-btn-submit" style="margin-top:16px;" id="cdpToStep4">Continuer ›</button>
         </div>
 
         <!-- Step 4: Contact -->
@@ -214,22 +241,22 @@
 
           <div class="cdp-field">
             <label>Nom et prénom *</label>
-            <input type="text" id="cdpName" placeholder="Marie Dupont" />
+            <input type="text" id="cdpName" placeholder="Alexandre Burnevskiy" />
             <p class="cdp-field-error" id="cdpErrName">Nom obligatoire.</p>
           </div>
           <div class="cdp-field">
-            <label>Téléphone <span style="font-weight:400;text-transform:none;">(ou e-mail)</span></label>
+            <label>Téléphone <span style="font-weight:400;text-transform:none;">(requis si pas d'e-mail)</span></label>
             <input type="tel" id="cdpPhone" placeholder="+41 79 123 45 67" />
-            <p class="cdp-field-error" id="cdpErrPhone">Format invalide (+41...)</p>
+            <p class="cdp-field-error" id="cdpErrPhone">Format invalide (+41 / 07x / 02x).</p>
           </div>
           <div class="cdp-field">
-            <label>E-mail <span style="font-weight:400;text-transform:none;">(ou téléphone)</span></label>
-            <input type="email" id="cdpEmail" placeholder="marie@example.com" />
+            <label>E-mail <span style="font-weight:400;text-transform:none;">(requis si pas de téléphone)</span></label>
+            <input type="email" id="cdpEmail" placeholder="alexandre@example.ch" />
             <p class="cdp-field-error" id="cdpErrEmail">Adresse e-mail invalide.</p>
           </div>
           <div class="cdp-field">
             <label>Remarques (optionnel)</label>
-            <input type="text" id="cdpNotes" placeholder="Terrasse, allergie..." />
+            <input type="text" id="cdpNotes" placeholder="Allergie fruits de mer, chaise haute..." />
           </div>
 
           <p style="font-size:11px;color:#9c8c7c;margin:8px 0;font-style:italic;">* Au moins un contact requis (téléphone ou e-mail).</p>
@@ -241,11 +268,13 @@
         </div>
 
         <!-- Step 5: Success -->
-        <div class="cdp-step" id="cdpStep5" style="text-align:center;padding:20px 0;">
-          <div style="width:56px;height:56px;border-radius:50%;background:#f5f0e8;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#2c2520;">✓</div>
-          <h3 class="cdp-serif" style="font-size:1.8rem;margin:0 0 8px 0;color:#2c2520;">Table réservée.</h3>
-          <p style="color:#5c4f44;font-size:13px;margin:0 0 16px 0;line-height:1.5;">Votre table est confirmée au Café de la Place.</p>
-          <div style="background:#f5f0e8;border-radius:10px;padding:12px;font-size:12px;color:#2c2520;margin-bottom:16px;" id="cdpSuccessSummary"></div>
+        <div class="cdp-step" id="cdpStep5" style="text-align:center;padding:12px 0;">
+          <div style="width:100%;height:120px;border-radius:12px;overflow:hidden;margin-bottom:14px;position:relative;">
+            <img src="assets/plat.jpg" alt="Café de la Place" style="width:100%;height:100%;object-fit:cover;" />
+          </div>
+          <h3 class="cdp-serif" style="font-size:1.8rem;margin:0 0 6px 0;color:#2c2520;">Table réservée !</h3>
+          <p style="color:#5c4f44;font-size:13px;margin:0 0 14px 0;line-height:1.5;">Votre table est confirmée au Café de la Place.</p>
+          <div style="background:#f5f0e8;border-radius:10px;padding:12px;font-size:12px;color:#2c2520;margin-bottom:16px;text-align:left;line-height:1.5;" id="cdpSuccessSummary"></div>
           <button class="cdp-btn-submit" id="cdpSuccessClose">Fermer</button>
         </div>
 
@@ -254,7 +283,7 @@
 
     <!-- Trigger Button -->
     <button class="cdp-floating-trigger" id="cdpTrigger">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <img src="assets/logo.png" alt="" style="height:18px;width:auto;object-fit:contain;filter:brightness(10);" />
       Réserver une table
     </button>
   `;
@@ -287,12 +316,20 @@
       if (bar) bar.className = 'cdp-prog-bar' + (i <= n ? ' done' : '');
     }
     if (n === 2) renderSuggestions();
+    if (n === 3 && !state.service) selectService('soir');
     if (n === 4) renderSummary();
   }
 
   document.getElementById('cdpBack1').onclick = () => setStep(1);
   document.getElementById('cdpBack2').onclick = () => setStep(2);
   document.getElementById('cdpBack3').onclick = () => setStep(3);
+  document.getElementById('cdpToStep4').onclick = () => setStep(4);
+
+  window.cdpSelectZone = function(zone) {
+    state.zone = zone;
+    document.getElementById('cdpZoneSalle').classList.toggle('selected', zone === 'interieur');
+    document.getElementById('cdpZoneTerrasse').classList.toggle('selected', zone === 'terrasse');
+  };
 
   // Guests
   function buildGuests() {
@@ -372,7 +409,7 @@
             ${s.label}
             ${s.badge ? `<span style="font-size:9px;background:rgba(44,37,32,0.1);color:#5c4f44;padding:2px 6px;border-radius:9999px;margin-left:6px;font-weight:700;">${s.badge}</span>` : ''}
           </div>
-          <div style="font-size:11px;color:#9c8c7c;margin-top:2px;">${s.sub} · ${s.time}</div>
+          <div style="font-size:11px;color:#9c8c7c;margin-top:2px;">${s.sub} · <strong>${s.time}</strong></div>
         </div>
         <span style="font-size:12px;font-weight:600;color:#2c2520;">Choisir ›</span>
       `;
@@ -380,7 +417,7 @@
         state.date = s.date;
         state.service = s.service;
         state.time = s.time;
-        setStep(4);
+        setStep(3);
       };
       box.appendChild(btn);
     });
@@ -446,12 +483,15 @@
       b.textContent = slot;
       b.onclick = () => {
         state.time = slot;
-        document.querySelectorAll('.cdp-chip').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('#cdpTimeChips .cdp-chip').forEach(c => c.classList.remove('selected'));
         b.classList.add('selected');
-        setTimeout(() => setStep(4), 150);
       };
       box.appendChild(b);
     });
+    if (!state.time) {
+      state.time = SLOTS[s][0];
+      box.firstChild?.classList.add('selected');
+    }
   }
   document.getElementById('cdpTabMidi').onclick = () => selectService('midi');
   document.getElementById('cdpTabSoir').onclick = () => selectService('soir');
@@ -461,22 +501,23 @@
     if (!state.date) return;
     const str = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
     const cap = str.charAt(0).toUpperCase() + str.slice(1);
+    const zoneLabel = (state.zone === 'terrasse') ? '🌿 Terrasse ombragée' : '🍷 Intérieur (Salle)';
     box.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <span style="font-weight:600;color:#2c2520;">${cap}</span> à <span style="font-weight:600;color:#2c2520;">${state.time}</span> (${state.service === 'midi' ? 'Midi' : 'Soir'})<br/>
-          <span style="color:#5c4f44;">Table pour ${state.guests} personne(s)</span>
+          <span style="font-weight:600;color:#2c2520;">${cap}</span> à <span style="font-weight:600;color:#2c2520;">${state.time || '19:30'}</span> (${state.service === 'midi' ? 'Midi' : 'Soir'})<br/>
+          <span style="color:#5c4f44;">Table pour ${state.guests} personne(s) &nbsp;·&nbsp; ${zoneLabel}</span>
         </div>
         <button type="button" id="cdpModTime" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;text-decoration:underline;color:#8b5c2a;">Modifier</button>
       </div>
     `;
-    document.getElementById('cdpModTime').onclick = () => { selectService(state.service || 'soir'); setStep(3); };
+    document.getElementById('cdpModTime').onclick = () => { setStep(3); };
   }
 
   // Validation
   function validatePhone(v) {
     const clean = v.replace(/[\s\-\.\(\)]/g, '');
-    return /^(\+\d{7,15}|00\d{7,15}|0\d{8,11})$/.test(clean);
+    return /^(\+41|0041|0)[1-9][0-9]{7,13}$/.test(clean);
   }
   function validateEmail(v) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -486,7 +527,7 @@
     const name = document.getElementById('cdpName').value.trim();
     const phone = document.getElementById('cdpPhone').value.trim();
     const email = document.getElementById('cdpEmail').value.trim();
-    const notes = document.getElementById('cdpNotes').value.trim();
+    const userNotes = document.getElementById('cdpNotes').value.trim();
     const err = document.getElementById('cdpError');
     const btn = document.getElementById('cdpSubmitBtn');
     err.style.display = 'none';
@@ -513,7 +554,7 @@
       if (hasPhone && !validatePhone(phone)) {
         document.getElementById('cdpPhone').classList.add('error');
         document.getElementById('cdpErrPhone').classList.add('show');
-        document.getElementById('cdpErrPhone').textContent = 'Format invalide (+41...)';
+        document.getElementById('cdpErrPhone').textContent = 'Format suisse valide (+41 / 07x / 02x).';
         ok = false;
       } else {
         document.getElementById('cdpPhone').classList.remove('error');
@@ -535,6 +576,9 @@
     btn.disabled = true;
     btn.textContent = 'Enregistrement…';
 
+    const zoneTag = state.zone === 'terrasse' ? '[Zone: Terrasse] ' : '[Zone: Intérieur] ';
+    const fullNotes = zoneTag + userNotes;
+
     const payload = {
       customer_name: name,
       customer_phone: phone || null,
@@ -542,8 +586,8 @@
       guests_count: state.guests,
       reservation_date: state.date.toISOString().split('T')[0],
       service_type: state.service,
-      reservation_time: state.time,
-      notes: notes || null,
+      reservation_time: state.time || '19:30',
+      notes: fullNotes.trim() || null,
       status: 'pending'
     };
 
@@ -554,7 +598,12 @@
         if (error) throw error;
       }
       const str = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
-      document.getElementById('cdpSuccessSummary').textContent = `${name} · ${str} à ${state.time} · ${state.guests} pers.`;
+      const zoneLabel = (state.zone === 'terrasse') ? 'Terrasse ombragée' : 'Intérieur (Salle)';
+      document.getElementById('cdpSuccessSummary').innerHTML = `
+        <strong>${name}</strong><br/>
+        📅 ${str} à ${state.time || '19:30'} (${state.service === 'midi' ? 'Midi' : 'Soir'})<br/>
+        👥 ${state.guests} personne(s) &nbsp;·&nbsp; 📍 ${zoneLabel}
+      `;
       setStep(5);
     } catch(e) {
       console.error(e);

@@ -9,7 +9,7 @@
   <script src="config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -62,6 +62,14 @@
     .sugg-card:hover { border-color: var(--stone); background: var(--cream-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(28,22,18,0.08); }
     .sugg-card.primary-sugg { border-color: rgba(139,92,42,0.35); background: #f7ede0; }
     .sugg-card.primary-sugg:hover { border-color: var(--accent); background: #f0e0ca; }
+
+    /* Zone cards */
+    .zone-card {
+      padding: 0.65rem; border-radius: 0.85rem; border: 1.5px solid rgba(92,79,68,0.2);
+      background: var(--white); cursor: pointer; transition: all 0.18s ease; text-align: left;
+    }
+    .zone-card:hover { border-color: var(--stone); transform: translateY(-1px); }
+    .zone-card.selected { border-color: var(--accent); background: #fdf8f2; box-shadow: 0 4px 14px rgba(139,92,42,0.12); }
 
     .day-cell {
       aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
@@ -148,11 +156,13 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between p-4 sm:p-6 md:p-10">
 
-  <!-- Header -->
+  <!-- Header with Real Restaurant Logo -->
   <header class="text-center py-6">
-    <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Saint-Légier · Suisse</p>
-    <h1 class="serif text-3xl sm:text-4xl text-[var(--stone)]">Café de la Place</h1>
-    <p class="text-xs text-[var(--stone-mid)] mt-1 font-light">Réservation en ligne instantanée</p>
+    <div class="inline-flex items-center justify-center gap-3 mb-2">
+      <img src="assets/logo.png" alt="Café de la Place" class="h-10 w-auto object-contain" />
+      <h1 class="serif text-3xl sm:text-4xl text-[var(--stone)]">Café de la Place</h1>
+    </div>
+    <p class="text-xs text-[var(--stone-mid)] font-light">Saint-Légier · Réservation en ligne</p>
   </header>
 
   <!-- Wizard Card -->
@@ -205,7 +215,7 @@
         <p class="text-[0.7rem] text-[var(--stone-light)] text-center tracking-wide">Fermé le lundi et le dimanche</p>
       </div>
 
-      <!-- Step 3: Service & Time -->
+      <!-- Step 3: Service, Time & Zone -->
       <div class="step" id="step-3">
         <button class="btn-ghost-sm mb-4" onclick="goStep(2)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
@@ -213,12 +223,41 @@
         </button>
         <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 3 / 4</p>
         <h2 class="serif text-2xl text-[var(--stone)] mb-5">Quel créneau ?</h2>
-        <div class="flex gap-2.5 mb-5">
-          <button class="svc-tab" id="tabMidi" onclick="selectService('midi')">Midi</button>
-          <button class="svc-tab" id="tabSoir" onclick="selectService('soir')">Soir</button>
+        
+        <div class="flex gap-2.5 mb-4">
+          <button class="svc-tab" id="tabMidi" onclick="selectService('midi')">Midi (11h45 – 13h00)</button>
+          <button class="svc-tab" id="tabSoir" onclick="selectService('soir')">Soir (18h30 – 20h30)</button>
         </div>
-        <div id="timeSlotInfo" class="text-xs text-[var(--stone-light)] mb-3 font-light"></div>
-        <div id="timeChips" class="flex flex-wrap gap-2"></div>
+        
+        <div id="timeChips" class="flex flex-wrap gap-2 mb-6"></div>
+
+        <!-- Seating Zone -->
+        <div class="pt-4 border-t border-[rgba(92,79,68,0.14)]">
+          <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-2.5">Zone souhaitée</p>
+          <div class="grid grid-cols-2 gap-3" id="zoneSelector">
+            <button type="button" class="zone-card selected" id="zoneBtnInterieur" onclick="selectZone('interieur')">
+              <div class="h-16 w-full rounded-lg overflow-hidden mb-2 relative">
+                <img src="assets/salle.jpg" alt="Salle" class="w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-black/15"></div>
+              </div>
+              <span class="font-semibold text-xs text-[var(--stone)] block">Intérieur (Salle)</span>
+              <span class="text-[10px] text-[var(--stone-light)] block">Ambiance bistrot feutrée</span>
+            </button>
+
+            <button type="button" class="zone-card" id="zoneBtnTerrasse" onclick="selectZone('terrasse')">
+              <div class="h-16 w-full rounded-lg overflow-hidden mb-2 relative">
+                <img src="assets/terrasse.jpg" alt="Terrasse" class="w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-black/15"></div>
+              </div>
+              <span class="font-semibold text-xs text-[var(--stone)] block">Terrasse ombragée</span>
+              <span class="text-[10px] text-[var(--stone-light)] block">Sous les marronniers</span>
+            </button>
+          </div>
+        </div>
+
+        <button onclick="goStep(4)" class="btn-primary w-full mt-6 justify-center">
+          Continuer vers vos coordonnées ›
+        </button>
       </div>
 
       <!-- Step 4: Contact -->
@@ -233,25 +272,25 @@
         <div class="space-y-4">
           <div>
             <label class="field-label">Nom et prénom *</label>
-            <input class="field-input" id="fName" type="text" placeholder="Marie Dupont" autocomplete="name" />
+            <input class="field-input" id="fName" type="text" placeholder="Alexandre Burnevskiy" autocomplete="name" />
             <p class="field-error" id="errName">Veuillez indiquer votre prénom et nom.</p>
           </div>
 
           <div>
             <label class="field-label">Téléphone <span class="font-light normal-case tracking-normal">(requis si pas d'e-mail)</span></label>
             <input class="field-input" id="fPhone" type="tel" placeholder="+41 79 123 45 67" autocomplete="tel" />
-            <p class="field-error" id="errPhone">Format invalide. Ex : +41 79 123 45 67</p>
+            <p class="field-error" id="errPhone">Format invalide (+41 / 07x / 02x). Ex : +41 79 123 45 67</p>
           </div>
 
           <div>
             <label class="field-label">E-mail <span class="font-light normal-case tracking-normal">(requis si pas de téléphone)</span></label>
-            <input class="field-input" id="fEmail" type="email" placeholder="marie@example.com" autocomplete="email" />
+            <input class="field-input" id="fEmail" type="email" placeholder="alexandre@example.ch" autocomplete="email" />
             <p class="field-error" id="errEmail">Adresse e-mail invalide.</p>
           </div>
 
           <div>
             <label class="field-label">Remarques <span class="font-light normal-case tracking-normal">(optionnel)</span></label>
-            <input class="field-input" id="fNotes" type="text" placeholder="Terrasse, allergie gluten…" />
+            <input class="field-input" id="fNotes" type="text" placeholder="Allergie aux fruits de mer, chaise haute..." />
           </div>
         </div>
 
@@ -268,15 +307,19 @@
       </div>
 
       <!-- Step 5: Finished -->
-      <div class="step text-center py-8" id="step-5">
-        <div style="width:64px;height:64px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <div class="step text-center py-4" id="step-5">
+        <div class="w-full h-36 rounded-xl overflow-hidden mb-5 shadow-sm relative">
+          <img src="assets/plat.jpg" alt="Café de la Place" class="w-full h-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-[var(--stone)]/60 to-transparent flex items-end p-4">
+            <span class="text-white text-xs font-medium">Bistronomie Vaudoise · Saint-Légier</span>
+          </div>
         </div>
-        <h3 class="serif text-3xl text-[var(--stone)] mb-3">Table réservée.</h3>
+
+        <h3 class="serif text-3xl text-[var(--stone)] mb-2">Table réservée !</h3>
         <p class="text-[var(--stone-mid)] text-sm font-light mb-5 max-w-xs mx-auto">
           Votre réservation est bien enregistrée au <strong class="font-semibold text-[var(--stone)]">Café de la Place</strong>.
         </p>
-        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-6 font-light" style="background:var(--cream);"></div>
+        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-6 font-light leading-relaxed" style="background:var(--cream);"></div>
         <button onclick="location.reload()" class="btn-primary px-8">Nouvelle réservation</button>
       </div>
 
@@ -303,7 +346,7 @@
   </footer>
 
   <script>
-    const state = { guests: null, date: null, service: null, time: null };
+    const state = { guests: null, date: null, service: null, time: null, zone: 'interieur' };
     const SLOTS = {
       midi: ['11:45','12:00','12:15','12:30','13:00'],
       soir: ['18:30','19:00','19:30','20:00','20:30'],
@@ -327,12 +370,19 @@
         if (bar) bar.className = 'prog-bar' + (i <= n ? ' done' : '');
       }
       if (n === 2) renderSuggestions();
+      if (n === 3 && !state.service) selectService('soir');
       if (n === 4) renderSummary();
+    }
+
+    function selectZone(zone) {
+      state.zone = zone;
+      document.getElementById('zoneBtnInterieur').classList.toggle('selected', zone === 'interieur');
+      document.getElementById('zoneBtnTerrasse').classList.toggle('selected', zone === 'terrasse');
     }
 
     function isClosedDay(d) {
       const dow = d.getDay();
-      return dow === 0 || dow === 1;
+      return dow === 0 || dow === 1; // Dimanche & Lundi fermés
     }
 
     function getSuggestions() {
@@ -341,8 +391,8 @@
       const h = now.getHours();
 
       if (!isClosedDay(now)) {
-        if (h < 13) list.push({ label: "Aujourd'hui · Midi", sub: "11h45 – 13h00 · Déjeuner de saison", time: '12:15', service: 'midi', date: new Date(now), primary: true, badge: 'Disponible' });
-        if (h < 20) list.push({ label: "Aujourd'hui · Ce soir", sub: "18h30 – 20h30 · Dîner au bistrot", time: '19:30', service: 'soir', date: new Date(now), primary: !list.length, badge: 'Recommandé' });
+        if (h < 13) list.push({ label: "Aujourd'hui · Midi", sub: "11h45 – 13h00 · Déjeuner", time: '12:15', service: 'midi', date: new Date(now), primary: true, badge: 'Disponible' });
+        if (h < 20) list.push({ label: "Aujourd'hui · Ce soir", sub: "18h30 – 20h30 · Dîner", time: '19:30', service: 'soir', date: new Date(now), primary: !list.length, badge: 'Recommandé' });
       }
       const tom = new Date(now); tom.setDate(now.getDate() + 1);
       if (!isClosedDay(tom)) list.push({ label: "Demain · Soir", sub: "18h30 – 20h30 · Table pour dîner", time: '19:30', service: 'soir', date: tom, primary: false, badge: null });
@@ -362,7 +412,7 @@
           if (!isClosedDay(d)) {
             const dayName = d.toLocaleDateString('fr-CH', { weekday: 'long' });
             const cap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-            list.unshift({ label: `Prochain service · ${cap}`, sub: "18h30 – 20h30 · Réouverture du bistrot", time: '19:30', service: 'soir', date: d, primary: true, badge: 'Prochaine ouverture' });
+            list.unshift({ label: `Prochain service · ${cap}`, sub: "18h30 – 20h30 · Réouverture", time: '19:30', service: 'soir', date: d, primary: true, badge: 'Prochaine ouverture' });
             break;
           }
         }
@@ -379,7 +429,7 @@
 
       const hdr = document.createElement('p');
       hdr.className = 'text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-2';
-      hdr.textContent = 'Suggestions rapides';
+      hdr.textContent = 'Suggestions rapides en 1 clic';
       box.appendChild(hdr);
 
       sugs.forEach((s, i) => {
@@ -392,11 +442,16 @@
               ${s.label}
               ${s.badge ? `<span style="font-size:0.6rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:9999px;background:rgba(44,37,32,0.1);color:var(--stone-mid);">${s.badge}</span>` : ''}
             </div>
-            <div style="font-size:0.75rem;color:var(--stone-light);margin-top:2px;font-weight:400;">${s.sub}</div>
+            <div style="font-size:0.75rem;color:var(--stone-light);margin-top:2px;font-weight:400;">${s.sub} · <strong>${s.time}</strong></div>
           </div>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--stone-mid)" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         `;
-        btn.onclick = () => { state.date = s.date; state.service = s.service; state.time = s.time; goStep(4); };
+        btn.onclick = () => {
+          state.date = s.date;
+          state.service = s.service;
+          state.time = s.time;
+          goStep(3);
+        };
         box.appendChild(btn);
       });
     }
@@ -418,7 +473,7 @@
       }
       const bPlus = document.createElement('button');
       bPlus.className = 'num-tile col-span-4';
-      bPlus.textContent = '8+ personnes';
+      bPlus.textContent = '8+ personnes (021 943 10 37)';
       bPlus.onclick = () => document.getElementById('modal8plus').classList.add('open');
       grid.appendChild(bPlus);
     }
@@ -470,8 +525,6 @@
       state.service = s;
       document.getElementById('tabMidi').classList.toggle('selected', s === 'midi');
       document.getElementById('tabSoir').classList.toggle('selected', s === 'soir');
-      const info = document.getElementById('timeSlotInfo');
-      info.textContent = s === 'midi' ? 'Service du Midi · 11h45 – 13h00' : 'Service du Soir · 18h30 – 20h30';
       const box = document.getElementById('timeChips');
       box.innerHTML = '';
       SLOTS[s].forEach(slot => {
@@ -482,10 +535,13 @@
           state.time = slot;
           document.querySelectorAll('#timeChips .chip').forEach(ch => ch.classList.remove('selected'));
           c.classList.add('selected');
-          setTimeout(() => goStep(4), 160);
         };
         box.appendChild(c);
       });
+      if (!state.time) {
+        state.time = SLOTS[s][0];
+        box.firstChild?.classList.add('selected');
+      }
     }
 
     function renderSummary() {
@@ -493,22 +549,24 @@
       if (!state.date) return;
       const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
       const cap = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+      const zoneLabel = (state.zone === 'terrasse') ? '🌿 Terrasse ombragée' : '🍷 Intérieur (Salle)';
+
       box.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
           <div style="line-height:1.6;">
-            <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--stone-light);">Votre réservation</span><br/>
-            <span style="font-weight:600;color:var(--stone);">${cap}</span> à <span style="font-weight:600;color:var(--stone);">${state.time}</span>
+            <span style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--stone-light);">Détails de la réservation</span><br/>
+            <span style="font-weight:600;color:var(--stone);">${cap}</span> à <span style="font-weight:600;color:var(--stone);">${state.time || '19:30'}</span>
             <span style="color:var(--stone-mid);">&nbsp;·&nbsp;${state.service === 'midi' ? 'Midi' : 'Soir'}</span><br/>
-            <span style="color:var(--stone-mid);">${state.guests} personne${state.guests > 1 ? 's' : ''}</span>
+            <span style="color:var(--stone-mid);">${state.guests} personne${state.guests > 1 ? 's' : ''} &nbsp;·&nbsp; <strong>${zoneLabel}</strong></span>
           </div>
-          <button type="button" onclick="selectService(state.service||'soir');goStep(3);" style="background:none;border:none;cursor:pointer;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--accent);text-decoration:underline;white-space:nowrap;">Modifier</button>
+          <button type="button" onclick="goStep(3);" style="background:none;border:none;cursor:pointer;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--accent);text-decoration:underline;white-space:nowrap;">Modifier</button>
         </div>
       `;
     }
 
     function validatePhone(v) {
       const clean = v.replace(/[\s\-\.\(\)]/g, '');
-      return /^(\+\d{7,15}|00\d{7,15}|0\d{8,11})$/.test(clean);
+      return /^(\+41|0041|0)[1-9][0-9]{7,13}$/.test(clean);
     }
     function validateEmail(v) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -529,7 +587,7 @@
       const name = document.getElementById('fName').value.trim();
       const phone = document.getElementById('fPhone').value.trim();
       const email = document.getElementById('fEmail').value.trim();
-      const notes = document.getElementById('fNotes').value.trim();
+      const userNotes = document.getElementById('fNotes').value.trim();
       const btn = document.getElementById('btnSubmit');
       const err = document.getElementById('submitError');
       err.classList.add('hidden');
@@ -549,7 +607,7 @@
         ok = false;
       } else {
         if (hasPhone && !validatePhone(phone)) {
-          setFieldState('fPhone','errPhone', false, 'Format invalide. Ex : +41 79 123 45 67');
+          setFieldState('fPhone','errPhone', false, 'Format suisse valide (+41 / 07x / 02x). Ex : +41 79 123 45 67');
           ok = false;
         } else if (hasPhone) setFieldState('fPhone','errPhone', true);
         else { document.getElementById('fPhone').classList.remove('error','valid'); document.getElementById('errPhone').classList.remove('show'); }
@@ -566,6 +624,9 @@
       btn.disabled = true;
       btn.textContent = 'Enregistrement…';
 
+      const zoneTag = state.zone === 'terrasse' ? '[Zone: Terrasse] ' : '[Zone: Intérieur] ';
+      const fullNotes = zoneTag + userNotes;
+
       const payload = {
         customer_name: name,
         customer_phone: phone || null,
@@ -573,8 +634,8 @@
         guests_count: state.guests,
         reservation_date: state.date.toISOString().split('T')[0],
         service_type: state.service,
-        reservation_time: state.time,
-        notes: notes || null,
+        reservation_time: state.time || '19:30',
+        notes: fullNotes.trim() || null,
         status: 'pending'
       };
 
@@ -586,9 +647,11 @@
           await new Promise(r => setTimeout(r, 600));
         }
         const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+        const zoneStr = state.zone === 'terrasse' ? 'Terrasse ombragée' : 'Intérieur (Salle)';
         document.getElementById('confirmSummary').innerHTML = `
-          ${name}&nbsp;·&nbsp;${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} à ${state.time}<br/>
-          ${state.service === 'midi' ? 'Midi' : 'Soir'}&nbsp;·&nbsp;${state.guests} personne${state.guests>1?'s':''}
+          <strong>${name}</strong><br/>
+          📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} à ${state.time || '19:30'} (${state.service === 'midi' ? 'Midi' : 'Soir'})<br/>
+          👥 ${state.guests} personne${state.guests>1?'s':''} &nbsp;·&nbsp; 📍 ${zoneStr}
         `;
         goStep(5);
       } catch(e) {
