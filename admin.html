@@ -3,211 +3,235 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Administration — Café de la Place</title>
+  <title>Service — Café de la Place</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-
-    /* Badges */
-    .badge-pending   { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
-    .badge-confirmed { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
-    .badge-seated    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-    .badge-cancelled { background: #f4f4f5; color: #71717a; border: 1px solid #e4e4e7; text-decoration: line-through; }
-
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-16px) scale(0.97); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #f5f0e8;
+      --cream-dark: #ede6d6;
+      --stone: #2c2520;
+      --stone-mid: #5c4f44;
+      --stone-light: #9c8c7c;
+      --accent: #8b5c2a;
+      --white: #fdfbf7;
     }
-    .card-enter { animation: slideDown 0.4s cubic-bezier(0.16,1,0.3,1) both; }
-    .card-cancelled { opacity: 0.55; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--cream);
+      color: var(--stone);
+      -webkit-font-smoothing: antialiased;
+    }
+    .serif { font-family: 'DM Serif Display', Georgia, serif; }
 
+    /* ── FIELD ── */
+    .field-input {
+      width: 100%; padding: 0.75rem 1rem; border-radius: 0.75rem;
+      border: 1.5px solid rgba(92,79,68,0.2); font-size: 0.875rem;
+      font-family: inherit; color: var(--stone); background: var(--white);
+      outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field-input:focus { border-color: var(--stone); box-shadow: 0 0 0 3px rgba(44,37,32,0.08); }
+    .field-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--stone-light); margin-bottom: 0.4rem; display: block; }
+
+    /* ── STATUS BADGES ── */
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 9999px;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .badge-pending   { background: #f7ede0; color: var(--accent); border: 1px solid rgba(139,92,42,0.25); }
+    .badge-confirmed { background: #e8f0fe; color: #1a56db; border: 1px solid rgba(26,86,219,0.2); }
+    .badge-seated    { background: #ecfdf5; color: #065f46; border: 1px solid rgba(6,95,70,0.2); }
+    .badge-cancelled { background: rgba(92,79,68,0.08); color: var(--stone-light); border: 1px solid rgba(92,79,68,0.15); text-decoration: line-through; }
+
+    /* ── ACTION BUTTONS ── */
+    .act-btn {
+      flex: 1; padding: 0.6rem; border-radius: 0.6rem;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em;
+      cursor: pointer; border: 1.5px solid transparent;
+      transition: all 0.15s ease; text-align: center;
+    }
+    .act-btn:active { transform: scale(0.96); }
+    .act-confirm { background: #e8f0fe; color: #1a56db; border-color: rgba(26,86,219,0.15); }
+    .act-confirm:hover, .act-confirm.on { background: #1a56db; color: #fff; border-color: #1a56db; }
+    .act-seat    { background: #ecfdf5; color: #065f46; border-color: rgba(6,95,70,0.15); }
+    .act-seat:hover, .act-seat.on    { background: #065f46; color: #fff; border-color: #065f46; }
+    .act-cancel  { background: rgba(92,79,68,0.07); color: var(--stone-light); border-color: rgba(92,79,68,0.1); }
+    .act-cancel:hover, .act-cancel.on { background: #fef2f2; color: #991b1b; border-color: rgba(153,27,27,0.2); }
+
+    /* ── DATE TABS ── */
+    .date-tab {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0.4rem 0.9rem; border-radius: 9999px; border: 1.5px solid rgba(92,79,68,0.15);
+      cursor: pointer; font-size: 0.7rem; font-weight: 600; background: var(--white);
+      color: var(--stone-mid); transition: all 0.15s ease; white-space: nowrap;
+    }
+    .date-tab:hover { border-color: var(--stone); color: var(--stone); }
+    .date-tab.active { background: var(--stone); color: var(--white); border-color: var(--stone); }
+
+    /* ── FILTER TABS ── */
     .filter-tab {
-      padding: 0.5rem 1.1rem; border-radius: 9999px; font-weight: 600;
-      font-size: 0.85rem; cursor: pointer; border: none;
-      background: transparent; color: #71717a; transition: all 0.16s ease;
+      padding: 0.45rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; border: none; background: transparent; color: var(--stone-light);
+      transition: all 0.15s ease; letter-spacing: 0.02em;
     }
-    .filter-tab.active { background: #1c1917; color: #fff; }
+    .filter-tab.active { background: var(--stone); color: var(--white); }
 
-    .action-btn {
-      flex: 1; padding: 0.75rem 0.5rem; border-radius: 0.75rem; font-size: 0.825rem;
-      font-weight: 600; cursor: pointer; border: none; transition: all 0.16s ease;
-      display: flex; align-items: center; justify-content: center; gap: 0.35rem;
-    }
-    .action-btn:active { transform: scale(0.96); }
-    .btn-confirm { background: #eff6ff; color: #1d4ed8; }
-    .btn-confirm:hover { background: #dbeafe; }
-    .btn-confirm.active-state { background: #1d4ed8; color: #fff; }
-    .btn-seat    { background: #f0fdf4; color: #15803d; }
-    .btn-seat:hover { background: #dcfce7; }
-    .btn-seat.active-state { background: #15803d; color: #fff; }
-    .btn-cancel  { background: #f4f4f5; color: #71717a; }
-    .btn-cancel:hover { background: #fee2e2; color: #b91c1c; }
-    .btn-cancel.active-state { background: #f4f4f5; color: #71717a; }
-
+    /* ── MODAL ── */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
-      display: flex; align-items: flex-end; justify-content: center; z-index: 60;
+      position: fixed; inset: 0; background: rgba(28,22,18,0.65); backdrop-filter: blur(10px);
+      display: flex; align-items: flex-end; justify-content: center; z-index: 80;
       opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
     }
     .modal-overlay.open { opacity: 1; pointer-events: auto; }
     .modal-sheet {
-      background: #fff; border-radius: 1.5rem 1.5rem 0 0; padding: 1.5rem;
-      width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
-      transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      background: var(--white); border-radius: 1.5rem 1.5rem 0 0;
+      padding: 1.75rem; width: 100%; max-width: 520px; max-height: 90svh; overflow-y: auto;
+      transform: translateY(100%); transition: transform 0.32s cubic-bezier(0.16,1,0.3,1);
     }
     .modal-overlay.open .modal-sheet { transform: translateY(0); }
 
+    /* ── TOAST ── */
     .toast {
-      position: fixed; bottom: 24px; right: 24px; z-index: 100;
-      background: #1c1917; color: #fff; padding: 0.85rem 1.25rem;
-      border-radius: 1rem; font-size: 0.875rem; font-weight: 500;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--stone); color: var(--white); padding: 0.75rem 1.25rem;
+      border-radius: 9999px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em;
       display: flex; align-items: center; gap: 0.6rem;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-      transform: translateY(80px); opacity: 0;
-      transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
-      pointer-events: none;
+      box-shadow: 0 8px 32px rgba(28,22,18,0.25);
+      opacity: 0; transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+      pointer-events: none; z-index: 100; white-space: nowrap;
     }
-    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-    @keyframes pulse-ring { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.5); } }
-    .rt-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse-ring 2s ease infinite; }
-    .rt-dot.disconnected { background: #ef4444; animation: none; }
+    /* ── RT DOT ── */
+    @keyframes pulse-dot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.6); } }
+    .rt-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse-dot 2s infinite; display: inline-block; }
+    .rt-dot.off { background: rgba(92,79,68,0.3); animation: none; }
 
-    .field-input {
-      width: 100%; padding: 0.8rem 1rem; border-radius: 0.75rem;
-      border: 1.5px solid #e5e5e5; font-size: 0.95rem; outline: none;
-      transition: border-color 0.16s, box-shadow 0.16s;
-    }
-    .field-input:focus { border-color: #92400e; box-shadow: 0 0 0 3px rgba(146,64,14,0.12); }
+    /* ── CARD ENTER ── */
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .card-enter { animation: slideIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+    .card-cancelled { opacity: 0.45; }
   </style>
 </head>
-<body class="bg-[#f6f5f3] min-h-screen">
+<body>
 
-  <!-- ════════════════════ AUTH SCREEN (GATEKEEPER) ════════════════════ -->
-  <div id="authScreen" class="fixed inset-0 z-50 bg-[#1c1917] flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-8 shadow-2xl text-center relative overflow-hidden">
-      <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-900 border border-amber-200 flex items-center justify-center text-2xl mx-auto mb-4">
-        🔒
-      </div>
-      <h2 class="text-xl font-bold text-stone-900">Espace Restaurant</h2>
-      <p class="text-xs text-stone-500 mt-1 mb-6">Accès réservé au personnel du Café de la Place</p>
+  <!-- ════ AUTH SCREEN ════ -->
+  <div id="authScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: var(--stone);">
+    <div style="background:var(--white); border-radius:1.5rem; max-width:360px; width:100%; padding:2rem; box-shadow: 0 32px 80px rgba(0,0,0,0.35);">
+      <p class="text-[0.65rem] font-semibold uppercase tracking-widest mb-1" style="color:var(--stone-light);">Espace Réservé</p>
+      <h2 class="serif text-2xl mb-1" style="color:var(--stone);">Café de la Place</h2>
+      <p class="text-sm font-light mb-8" style="color:var(--stone-light);">Accès réservé au personnel.</p>
 
-      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-left">
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-stone-600 mb-1">Identifiant</label>
-          <input type="text" id="authLogin" required class="field-input text-stone-900" placeholder="admin" autocomplete="username" />
+          <label class="field-label">Identifiant</label>
+          <input type="text" id="authLogin" required class="field-input" placeholder="admin" autocomplete="username" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-stone-600 mb-1">Mot de passe</label>
-          <input type="password" id="authPass" required class="field-input text-stone-900" placeholder="••••••••" autocomplete="current-password" />
+          <label class="field-label">Mot de passe</label>
+          <input type="password" id="authPass" required class="field-input" placeholder="••••••••" autocomplete="current-password" />
         </div>
-
-        <p id="authError" class="text-red-500 text-xs text-center hidden font-medium pt-1">
-          Identifiants incorrects.
-        </p>
-
-        <button type="submit" class="w-full bg-[#92400e] hover:bg-[#7c2d12] text-white py-3.5 rounded-xl font-semibold text-sm transition-colors mt-2 active:scale-98">
+        <p id="authError" class="text-xs font-medium text-red-700 hidden">Identifiants incorrects. Réessayez.</p>
+        <button type="submit" style="width:100%;padding:0.875rem;background:var(--stone);color:var(--white);border-radius:9999px;font-weight:600;font-size:0.875rem;letter-spacing:0.04em;text-transform:uppercase;border:none;cursor:pointer;margin-top:0.5rem;transition:background 0.2s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--stone)'">
           Se connecter
         </button>
       </form>
 
-      <div class="mt-6 pt-5 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
-        <a href="index.html" class="hover:text-stone-700 transition-colors">← Retour au site public</a>
-        <span>Saint-Légier</span>
+      <div class="mt-6 pt-5 flex justify-between" style="border-top: 1px solid rgba(92,79,68,0.12);">
+        <a href="index.html" style="font-size:0.75rem;color:var(--stone-light);text-decoration:none;" onmouseover="this.style.color='var(--stone)'" onmouseout="this.style.color='var(--stone-light)'">← Site public</a>
+        <span style="font-size:0.75rem;color:var(--stone-light);">Saint-Légier</span>
       </div>
     </div>
   </div>
 
-  <!-- ════════════════════ PROTECTED APP CONTENT ════════════════════ -->
+  <!-- ════ APP CONTENT ════ -->
   <div id="appScreen" class="hidden">
-    <!-- Header -->
-    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80">
-      <div class="max-w-3xl mx-auto px-4 py-3">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-3">
-            <span class="w-8 h-8 rounded-full bg-stone-900 text-amber-100 flex items-center justify-center text-xs font-bold">CP</span>
-            <div>
-              <h1 class="font-bold text-stone-900 text-sm leading-tight">Café de la Place — Service</h1>
-              <p class="text-xs text-stone-400" id="headerDate"></p>
-            </div>
+
+    <!-- ── TOPBAR ── -->
+    <header style="position:sticky;top:0;z-index:40;background:rgba(245,240,232,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(92,79,68,0.12);">
+      <div style="max-width:720px;margin:0 auto;padding:0.75rem 1.25rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+          <div>
+            <span class="serif" style="font-size:1rem;color:var(--stone);">Café de la Place</span>
+            <span style="font-size:0.75rem;color:var(--stone-light);margin-left:0.75rem;" id="headerDate"></span>
           </div>
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1.5 text-xs text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full">
-              <div class="rt-dot disconnected" id="rtDot"></div>
+          <div style="display:flex;align-items:center;gap:0.75rem;">
+            <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.7rem;color:var(--stone-light);">
+              <span class="rt-dot off" id="rtDot"></span>
               <span id="rtLabel">Connexion...</span>
             </div>
-            <button onclick="handleLogout()" title="Déconnexion" class="text-stone-400 hover:text-stone-700 text-xs p-1.5 rounded-lg border border-stone-200 bg-stone-50">
-              Quitter 🚪
-            </button>
+            <button onclick="handleLogout()" style="font-size:0.7rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--stone-light);background:none;border:1.5px solid rgba(92,79,68,0.2);padding:0.35rem 0.75rem;border-radius:9999px;cursor:pointer;" onmouseover="this.style.color='var(--stone)'" onmouseout="this.style.color='var(--stone-light)'">Quitter</button>
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <div class="flex items-center bg-stone-100 rounded-full p-1 gap-0.5 flex-1">
+        <!-- Filters -->
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div style="display:flex;background:rgba(92,79,68,0.08);border-radius:9999px;padding:3px;gap:2px;flex:1;">
             <button class="filter-tab active" id="tab-all"  onclick="setFilter('all')">Tout</button>
-            <button class="filter-tab"        id="tab-midi" onclick="setFilter('midi')">🌞 Midi</button>
-            <button class="filter-tab"        id="tab-soir" onclick="setFilter('soir')">🌙 Soir</button>
+            <button class="filter-tab"        id="tab-midi" onclick="setFilter('midi')">Midi</button>
+            <button class="filter-tab"        id="tab-soir" onclick="setFilter('soir')">Soir</button>
           </div>
-          <button onclick="openManualModal()" class="flex items-center gap-1.5 bg-[#92400e] text-white rounded-full px-4 py-2 text-xs font-semibold hover:bg-[#7c2d12] transition-colors active:scale-95">
+          <button onclick="openManualModal()" style="display:flex;align-items:center;gap:0.4rem;background:var(--stone);color:var(--white);border:none;border-radius:9999px;padding:0.5rem 1rem;font-size:0.75rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:background 0.2s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--stone)'">
             + Réservation
           </button>
         </div>
       </div>
     </header>
 
-    <!-- Date selector -->
-    <div class="sticky top-[105px] z-30 bg-[#f6f5f3] border-b border-stone-200/80">
-      <div class="max-w-3xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
-        <div class="overflow-x-auto flex-1">
-          <div class="flex gap-2" id="dateTabs" style="min-width: max-content;"></div>
+    <!-- ── DATE TABS ── -->
+    <div style="position:sticky;top:105px;z-index:30;background:var(--cream);border-bottom:1px solid rgba(92,79,68,0.1);">
+      <div style="max-width:720px;margin:0 auto;padding:0.6rem 1.25rem;display:flex;align-items:center;gap:0.75rem;">
+        <div style="overflow-x:auto;flex:1;scrollbar-width:none;">
+          <div style="display:flex;gap:0.5rem;" id="dateTabs"></div>
         </div>
-        <div class="flex items-center gap-1.5 flex-shrink-0">
-          <input type="date" id="customDatePicker" onchange="setActiveDate(this.value)" class="text-xs bg-white border border-stone-200 rounded-full px-3 py-1.5 font-medium text-stone-700 outline-none hover:border-stone-400 cursor-pointer shadow-sm" title="Choisir une date spécifique" />
-        </div>
+        <input type="date" id="customDatePicker" onchange="setActiveDate(this.value)"
+          style="font-size:0.7rem;font-weight:600;background:var(--white);border:1.5px solid rgba(92,79,68,0.2);border-radius:9999px;padding:0.35rem 0.75rem;outline:none;cursor:pointer;color:var(--stone-mid);" />
       </div>
     </div>
 
-    <!-- Reservations Feed -->
-    <main class="max-w-3xl mx-auto px-4 py-4 pb-28">
-      <div id="reservationList" class="space-y-3"></div>
-      <div id="emptyState" class="text-center py-16 text-stone-400 hidden">
-        <div class="text-4xl mb-2">📋</div>
-        <p class="font-semibold text-stone-600 text-sm">Aucune réservation pour ce service</p>
-        <p class="text-xs mt-0.5">Les nouvelles réservations apparaîtront ici en direct.</p>
+    <!-- ── RESERVATION LIST ── -->
+    <main style="max-width:720px;margin:0 auto;padding:1.25rem;padding-bottom:6rem;">
+      <div id="reservationList" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+      <div id="emptyState" class="hidden" style="text-align:center;padding:5rem 0;color:var(--stone-light);">
+        <p style="font-size:0.875rem;font-weight:600;color:var(--stone-mid);margin-bottom:0.25rem;">Aucune réservation pour ce service</p>
+        <p style="font-size:0.75rem;font-weight:400;">Les nouvelles réservations apparaissent ici en temps réel.</p>
       </div>
     </main>
 
-    <!-- Toast notification -->
+    <!-- ── TOAST ── -->
     <div class="toast" id="toast">
-      <span id="toastIcon">🔔</span>
-      <span id="toastMsg">Nouvelle réservation !</span>
+      <span id="toastMsg">Nouvelle réservation</span>
     </div>
 
-    <!-- Phone Booking Modal -->
+    <!-- ── MANUAL BOOKING MODAL ── -->
     <div class="modal-overlay" id="manualModal">
       <div class="modal-sheet">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-bold text-stone-900">Réservation par téléphone</h2>
-          <button onclick="closeManualModal()" class="text-stone-400 hover:text-stone-700">✕</button>
-        </div>
-        <div class="space-y-3 text-xs">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
           <div>
-            <label class="block font-semibold text-stone-600 mb-1">Nom du client *</label>
-            <input class="field-input" id="mName" type="text" placeholder="M. Dupont" />
+            <p class="text-[0.65rem] font-semibold uppercase tracking-widest" style="color:var(--stone-light);margin-bottom:2px;">Réservation téléphone</p>
+            <h2 class="serif" style="font-size:1.5rem;color:var(--stone);">Nouvelle réservation</h2>
+          </div>
+          <button onclick="closeManualModal()" style="background:none;border:none;cursor:pointer;color:var(--stone-light);font-size:1.2rem;padding:4px;">✕</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div>
+            <label class="field-label">Nom du client *</label>
+            <input class="field-input" id="mName" type="text" placeholder="Marie Dupont" />
           </div>
           <div>
-            <label class="block font-semibold text-stone-600 mb-1">Téléphone *</label>
+            <label class="field-label">Téléphone</label>
             <input class="field-input" id="mPhone" type="tel" placeholder="+41 79 123 45 67" />
           </div>
-          <div class="grid grid-cols-2 gap-2">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div>
-              <label class="block font-semibold text-stone-600 mb-1">Couverts *</label>
+              <label class="field-label">Couverts *</label>
               <select class="field-input" id="mGuests">
                 <option value="1">1 pers.</option>
                 <option value="2" selected>2 pers.</option>
@@ -220,77 +244,41 @@
               </select>
             </div>
             <div>
-              <label class="block font-semibold text-stone-600 mb-1">Date *</label>
+              <label class="field-label">Date *</label>
               <input class="field-input" id="mDate" type="date" />
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-2">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div>
-              <label class="block font-semibold text-stone-600 mb-1">Service *</label>
+              <label class="field-label">Service *</label>
               <select class="field-input" id="mService" onchange="updateManualSlots()">
                 <option value="midi">Midi</option>
                 <option value="soir" selected>Soir</option>
               </select>
             </div>
             <div>
-              <label class="block font-semibold text-stone-600 mb-1">Heure *</label>
+              <label class="field-label">Heure *</label>
               <select class="field-input" id="mTime"></select>
             </div>
           </div>
           <div>
-            <label class="block font-semibold text-stone-600 mb-1">Remarques (allergie, table...)</label>
-            <input class="field-input" id="mNotes" type="text" placeholder="Fenêtre, chaise haute..." />
+            <label class="field-label">Remarques</label>
+            <input class="field-input" id="mNotes" type="text" placeholder="Table en terrasse, allergie gluten…" />
           </div>
-          <p id="mError" class="text-red-500 hidden pt-1"></p>
-          <button onclick="submitManual()" class="w-full bg-[#92400e] text-white py-3 rounded-xl font-semibold mt-3 hover:bg-[#7c2d12]">
-            Enregistrer la réservation
+          <p id="mError" class="hidden" style="font-size:0.75rem;color:#991b1b;font-weight:500;"></p>
+          <button onclick="submitManual()" style="width:100%;padding:0.875rem;background:var(--stone);color:var(--white);border:none;border-radius:9999px;font-weight:600;font-size:0.875rem;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--stone)'">
+            Enregistrer
           </button>
         </div>
       </div>
     </div>
-  </div>
+
+  </div><!-- /appScreen -->
 
   <script>
-    // ════════════════════ CREDENTIALS & SECURITY ════════════════════
-    // Identifiants par défaut pour le restaurant (personnalisables)
-    const ADMIN_CREDENTIALS = {
-      user: 'admin',
-      pass: 'place1806' // code postal de Saint-Légier
-    };
+    // ── CREDENTIALS ──
+    const ADMIN_CREDENTIALS = { user: 'admin', pass: 'place1806' };
 
-    function checkAuth() {
-      const isAuth = sessionStorage.getItem('cdp_auth_session') === 'true';
-      if (isAuth) {
-        document.getElementById('authScreen').classList.add('hidden');
-        document.getElementById('appScreen').classList.remove('hidden');
-        initDashboard();
-      } else {
-        document.getElementById('authScreen').classList.remove('hidden');
-        document.getElementById('appScreen').classList.add('hidden');
-      }
-    }
-
-    function handleLogin(e) {
-      e.preventDefault();
-      const u = document.getElementById('authLogin').value.trim();
-      const p = document.getElementById('authPass').value.trim();
-      const err = document.getElementById('authError');
-
-      if (u === ADMIN_CREDENTIALS.user && p === ADMIN_CREDENTIALS.pass) {
-        sessionStorage.setItem('cdp_auth_session', 'true');
-        err.classList.add('hidden');
-        checkAuth();
-      } else {
-        err.classList.remove('hidden');
-      }
-    }
-
-    function handleLogout() {
-      sessionStorage.removeItem('cdp_auth_session');
-      checkAuth();
-    }
-
-    // ════════════════════ DASHBOARD CORE ════════════════════
     const SLOTS = {
       midi: ['11:45','12:00','12:15','12:30','13:00'],
       soir: ['18:30','19:00','19:30','20:00','20:30'],
@@ -299,16 +287,37 @@
     const STATUS_BADGE  = { pending:'badge-pending', confirmed:'badge-confirmed', seated:'badge-seated', cancelled:'badge-cancelled' };
     const DAYS_FR = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
 
-    let allReservations = [];
-    let activeFilter    = 'all';
-    let activeDate      = null;
-    let sbClient        = null;
-    let audioCtx        = null;
+    let allReservations = [], activeFilter = 'all', activeDate = null, sbClient = null, audioCtx = null;
 
+    // ── AUTH ──
+    function checkAuth() {
+      const ok = sessionStorage.getItem('cdp_auth') === '1';
+      document.getElementById('authScreen').classList.toggle('hidden', ok);
+      document.getElementById('appScreen').classList.toggle('hidden', !ok);
+      if (ok) initDashboard();
+    }
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('authLogin').value.trim();
+      const p = document.getElementById('authPass').value.trim();
+      if (u === ADMIN_CREDENTIALS.user && p === ADMIN_CREDENTIALS.pass) {
+        sessionStorage.setItem('cdp_auth','1');
+        checkAuth();
+      } else {
+        document.getElementById('authError').classList.remove('hidden');
+      }
+    }
+    function handleLogout() {
+      sessionStorage.removeItem('cdp_auth');
+      checkAuth();
+    }
+
+    // ── DASHBOARD ──
     function initDashboard() {
       setHeaderDate();
       buildDateTabs();
       updateManualSlots();
+      document.getElementById('mDate').value = new Date().toISOString().split('T')[0];
 
       const cfg = window.SUPABASE_CONFIG;
       if (cfg && cfg.url && !cfg.url.includes('VOTRE')) {
@@ -318,14 +327,10 @@
       } else {
         loadDemoData();
       }
-
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('mDate').value = today;
     }
 
     function setHeaderDate() {
-      const opts = { weekday:'long', day:'numeric', month:'long', year:'numeric' };
-      const str = new Date().toLocaleDateString('fr-CH', opts);
+      const str = new Date().toLocaleDateString('fr-CH', { weekday:'long', day:'numeric', month:'long' });
       document.getElementById('headerDate').textContent = str.charAt(0).toUpperCase() + str.slice(1);
     }
 
@@ -336,19 +341,13 @@
       activeDate = today.toISOString().split('T')[0];
 
       for (let i = 0; i < 7; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
+        const d = new Date(today); d.setDate(today.getDate() + i);
         const iso = d.toISOString().split('T')[0];
-        const dow = DAYS_FR[d.getDay()];
-        const day = d.getDate();
-
         const btn = document.createElement('button');
+        btn.className = 'date-tab' + (i === 0 ? ' active' : '');
         btn.dataset.iso = iso;
         btn.onclick = () => setActiveDate(iso);
-        btn.className = `flex flex-col items-center justify-center px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-          i === 0 ? 'bg-[#1c1917] text-white border-transparent' : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
-        }`;
-        btn.innerHTML = `<span class="opacity-70">${dow}</span><span>${day}</span>`;
+        btn.innerHTML = `<span style="opacity:0.6;font-size:0.6rem;">${DAYS_FR[d.getDay()]}</span><span>${d.getDate()}</span>`;
         container.appendChild(btn);
       }
     }
@@ -357,13 +356,7 @@
       activeDate = iso;
       const picker = document.getElementById('customDatePicker');
       if (picker) picker.value = iso;
-
-      document.querySelectorAll('#dateTabs button').forEach(b => {
-        const active = b.dataset.iso === iso;
-        b.className = `flex flex-col items-center justify-center px-4 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-          active ? 'bg-[#1c1917] text-white border-transparent' : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
-        }`;
-      });
+      document.querySelectorAll('#dateTabs .date-tab').forEach(b => b.classList.toggle('active', b.dataset.iso === iso));
       renderList();
     }
 
@@ -379,21 +372,21 @@
     function loadDemoData() {
       const today = new Date().toISOString().split('T')[0];
       allReservations = [
-        { id:'1', customer_name:'Marie Fontaine',  customer_phone:'+41 79 123 45 67', guests_count:2, reservation_date:today, service_type:'midi', reservation_time:'12:00', notes:null, status:'confirmed' },
-        { id:'2', customer_name:'Jean-Luc Moreau', customer_phone:'+41 76 987 65 43', guests_count:4, reservation_date:today, service_type:'midi', reservation_time:'12:30', notes:'Allergie gluten', status:'pending' },
-        { id:'3', customer_name:'Sophie Blanc',    customer_phone:'+41 78 555 00 11', guests_count:3, reservation_date:today, service_type:'soir', reservation_time:'19:30', notes:null, status:'pending' },
+        { id:'1', customer_name:'Marie Fontaine',  customer_phone:'+41 79 123 45 67', customer_email:null, guests_count:2, reservation_date:today, service_type:'midi', reservation_time:'12:00', notes:null, status:'confirmed' },
+        { id:'2', customer_name:'Jean-Luc Moreau', customer_phone:'+41 76 987 65 43', customer_email:'jlm@email.com', guests_count:4, reservation_date:today, service_type:'midi', reservation_time:'12:30', notes:'Allergie gluten', status:'pending' },
+        { id:'3', customer_name:'Sophie Blanc',    customer_phone:null, customer_email:'s.blanc@example.ch', guests_count:3, reservation_date:today, service_type:'soir', reservation_time:'19:30', notes:null, status:'pending' },
       ];
       renderList();
-      setRTStatus(true, '⚡ Démo locale');
+      setRTStatus(true, 'Démo locale');
     }
 
     function subscribeRealtime() {
-      sbClient.channel('reservations-channel')
+      sbClient.channel('reservations-live')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, payload => {
           if (payload.eventType === 'INSERT') {
             allReservations.unshift(payload.new);
-            playNotificationSound();
-            showToast('🔔', `Nouvelle réservation · ${payload.new.customer_name}`);
+            playChime();
+            showToast(`Nouvelle réservation — ${payload.new.customer_name}`);
           } else if (payload.eventType === 'UPDATE') {
             const idx = allReservations.findIndex(r => r.id === payload.new.id);
             if (idx > -1) allReservations[idx] = payload.new;
@@ -402,13 +395,11 @@
           }
           renderList();
         })
-        .subscribe(status => {
-          setRTStatus(status === 'SUBSCRIBED', status === 'SUBSCRIBED' ? 'En direct' : 'Connexion...');
-        });
+        .subscribe(status => setRTStatus(status === 'SUBSCRIBED', status === 'SUBSCRIBED' ? 'En direct' : 'Connexion...'));
     }
 
-    function setRTStatus(connected, label) {
-      document.getElementById('rtDot').classList.toggle('disconnected', !connected);
+    function setRTStatus(on, label) {
+      document.getElementById('rtDot').className = 'rt-dot' + (on ? '' : ' off');
       document.getElementById('rtLabel').textContent = label;
     }
 
@@ -417,55 +408,48 @@
       const empty = document.getElementById('emptyState');
       list.innerHTML = '';
 
-      const filtered = allReservations.filter(r => {
-        if (r.reservation_date !== activeDate) return false;
-        if (activeFilter !== 'all' && r.service_type !== activeFilter) return false;
-        return true;
-      }).sort((a,b) => (a.reservation_time || '').localeCompare(b.reservation_time || ''));
+      const filtered = allReservations
+        .filter(r => r.reservation_date === activeDate && (activeFilter === 'all' || r.service_type === activeFilter))
+        .sort((a,b) => (a.reservation_time||'').localeCompare(b.reservation_time||''));
 
-      if (filtered.length === 0) {
-        empty.classList.remove('hidden');
-        return;
-      }
+      if (!filtered.length) { empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
 
       filtered.forEach(r => {
         const card = document.createElement('div');
-        card.className = `bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden flex transition-all ${
-          r.status === 'cancelled' ? 'card-cancelled' : ''
-        }`;
-        const stripe = r.service_type === 'midi' ? 'bg-amber-400' : 'bg-indigo-500';
-        const note = r.notes ? `<span class="inline-block bg-amber-50 text-amber-900 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium">⚠️ ${r.notes}</span>` : '';
+        card.className = 'card-enter' + (r.status === 'cancelled' ? ' card-cancelled' : '');
+        card.style.cssText = `background:var(--white);border-radius:1rem;border:1.5px solid rgba(92,79,68,0.12);overflow:hidden;display:flex;`;
+
+        const stripe = r.service_type === 'midi' ? '#d97706' : '#4f46e5';
+        const contact = r.customer_phone
+          ? `<a href="tel:${r.customer_phone}" style="font-size:0.75rem;color:var(--accent);font-weight:500;">${r.customer_phone}</a>`
+          : r.customer_email
+            ? `<a href="mailto:${r.customer_email}" style="font-size:0.75rem;color:var(--accent);font-weight:500;">${r.customer_email}</a>`
+            : '';
 
         card.innerHTML = `
-          <div class="w-2 flex-shrink-0 ${stripe}"></div>
-          <div class="flex-1 p-4">
-            <div class="flex items-start justify-between mb-2">
-              <div class="flex items-baseline gap-2">
-                <span class="text-2xl font-extrabold text-stone-900">${r.reservation_time}</span>
-                <span class="text-xs font-semibold text-stone-500">${r.service_type === 'midi' ? '🌞' : '🌙'} ${r.guests_count} pers.</span>
+          <div style="width:3px;flex-shrink:0;background:${stripe};"></div>
+          <div style="flex:1;padding:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+              <div style="display:flex;align-items:baseline;gap:0.6rem;">
+                <span style="font-size:1.75rem;font-weight:700;color:var(--stone);font-family:'DM Serif Display',serif;">${r.reservation_time}</span>
+                <span style="font-size:0.7rem;font-weight:600;color:var(--stone-light);letter-spacing:0.02em;">${r.service_type === 'midi' ? 'Midi' : 'Soir'} · ${r.guests_count} pers.</span>
               </div>
-              <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold ${STATUS_BADGE[r.status]}">${STATUS_LABELS[r.status] || r.status}</span>
+              <span class="badge ${STATUS_BADGE[r.status] || 'badge-pending'}">${STATUS_LABELS[r.status] || r.status}</span>
             </div>
 
-            <div class="flex items-center justify-between mb-3">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.875rem;">
               <div>
-                <p class="font-bold text-sm text-stone-900">${r.customer_name}</p>
-                <a href="tel:${r.customer_phone}" class="text-xs text-blue-600 hover:underline font-medium">${r.customer_phone}</a>
+                <p style="font-weight:600;font-size:0.9rem;color:var(--stone);">${r.customer_name}</p>
+                ${contact}
               </div>
-              ${note}
+              ${r.notes ? `<span style="font-size:0.65rem;font-weight:600;padding:2px 8px;border-radius:9999px;background:#f7ede0;color:var(--accent);border:1px solid rgba(139,92,42,0.2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">⚑ ${r.notes}</span>` : ''}
             </div>
 
-            <div class="flex gap-2">
-              <button class="action-btn btn-confirm ${r.status === 'confirmed' ? 'active-state' : ''}" onclick="updateStatus('${r.id}', 'confirmed')">
-                Confirmer
-              </button>
-              <button class="action-btn btn-seat ${r.status === 'seated' ? 'active-state' : ''}" onclick="updateStatus('${r.id}', 'seated')">
-                Installer
-              </button>
-              <button class="action-btn btn-cancel ${r.status === 'cancelled' ? 'active-state' : ''}" onclick="updateStatus('${r.id}', 'cancelled')">
-                Annuler
-              </button>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="act-btn act-confirm ${r.status==='confirmed'?'on':''}" onclick="updateStatus('${r.id}','confirmed')">Confirmer</button>
+              <button class="act-btn act-seat ${r.status==='seated'?'on':''}" onclick="updateStatus('${r.id}','seated')">Installé</button>
+              <button class="act-btn act-cancel ${r.status==='cancelled'?'on':''}" onclick="updateStatus('${r.id}','cancelled')">Annuler</button>
             </div>
           </div>
         `;
@@ -476,16 +460,12 @@
     async function updateStatus(id, newStatus) {
       const idx = allReservations.findIndex(r => r.id === id);
       if (idx > -1) { allReservations[idx].status = newStatus; renderList(); }
-      if (sbClient) {
-        await sbClient.from('reservations').update({ status: newStatus }).eq('id', id);
-      }
+      if (sbClient) await sbClient.from('reservations').update({ status: newStatus }).eq('id', id);
     }
 
     function setFilter(f) {
       activeFilter = f;
-      ['all','midi','soir'].forEach(k => {
-        document.getElementById('tab-' + k).classList.toggle('active', k === f);
-      });
+      ['all','midi','soir'].forEach(k => document.getElementById('tab-'+k).classList.toggle('active', k === f));
       renderList();
     }
 
@@ -494,8 +474,7 @@
 
     function updateManualSlots() {
       const svc = document.getElementById('mService').value;
-      const sel = document.getElementById('mTime');
-      sel.innerHTML = SLOTS[svc].map(s => `<option value="${s}">${s}</option>`).join('');
+      document.getElementById('mTime').innerHTML = SLOTS[svc].map(s => `<option value="${s}">${s}</option>`).join('');
     }
 
     async function submitManual() {
@@ -509,14 +488,14 @@
       const err = document.getElementById('mError');
       err.classList.add('hidden');
 
-      if (!name || !phone || !date) {
-        err.textContent = 'Nom, téléphone et date obligatoires.';
+      if (!name || !date) {
+        err.textContent = 'Nom et date sont obligatoires.';
         err.classList.remove('hidden');
         return;
       }
 
       const payload = {
-        customer_name: name, customer_phone: phone, customer_email: null,
+        customer_name: name, customer_phone: phone || null, customer_email: null,
         guests_count: guests, reservation_date: date, service_type: service,
         reservation_time: time, notes: notes || null, status: 'confirmed'
       };
@@ -528,37 +507,36 @@
         renderList();
       }
       closeManualModal();
-      showToast('✅', 'Réservation enregistrée');
+      showToast(`Réservation enregistrée — ${name}`);
     }
 
-    function showToast(icon, msg) {
+    function showToast(msg) {
       const el = document.getElementById('toast');
-      document.getElementById('toastIcon').textContent = icon;
       document.getElementById('toastMsg').textContent = msg;
       el.classList.add('show');
       setTimeout(() => el.classList.remove('show'), 3500);
     }
 
-    function playNotificationSound() {
+    function playChime() {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
-        [[523.25, 0, 0.12], [659.25, 0.14, 0.12], [783.99, 0.28, 0.18]].forEach(([freq, delay, dur]) => {
+        [[523.25,0,0.12],[659.25,0.14,0.12],[783.99,0.28,0.18]].forEach(([freq,delay,dur]) => {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.connect(gain); gain.connect(audioCtx.destination);
           osc.type = 'sine'; osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0, now + delay);
-          gain.gain.linearRampToValueAtTime(0.12, now + delay + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
-          osc.start(now + delay); osc.stop(now + delay + dur + 0.02);
+          gain.gain.setValueAtTime(0, now+delay);
+          gain.gain.linearRampToValueAtTime(0.1, now+delay+0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now+delay+dur);
+          osc.start(now+delay); osc.stop(now+delay+dur+0.02);
         });
       } catch(e) {}
     }
 
     document.addEventListener('DOMContentLoaded', checkAuth);
-    document.addEventListener('click', () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }, { once: true });
+    document.addEventListener('click', () => { try { if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }, { once: true });
   </script>
 </body>
 </html>

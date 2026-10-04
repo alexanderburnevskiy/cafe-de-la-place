@@ -19,103 +19,125 @@
   const state = { guests: null, date: null, service: null, time: null };
   let calYear, calMonth;
 
-  // 1. Inject Styles
+  // 1. Inject Fonts & Styles
+  if (!document.getElementById('cdp-fonts')) {
+    const link = document.createElement('link');
+    link.id = 'cdp-fonts';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap';
+    document.head.appendChild(link);
+  }
+
   const css = `
     .cdp-modal-overlay {
-      position: fixed; inset: 0; background: rgba(12, 10, 9, 0.65);
-      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      position: fixed; inset: 0; background: rgba(28, 22, 18, 0.65);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       display: flex; align-items: center; justify-content: center;
       z-index: 999999; opacity: 0; pointer-events: none;
-      transition: opacity 0.25s ease; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: opacity 0.28s ease; font-family: 'Inter', -apple-system, sans-serif;
     }
     .cdp-modal-overlay.open { opacity: 1; pointer-events: auto; }
     .cdp-modal-box {
-      background: #ffffff; border-radius: 1.5rem; max-width: 440px; width: 92%;
+      background: #fdfbf7; border-radius: 1.5rem; max-width: 440px; width: 92%;
       max-height: 90vh; overflow-y: auto; padding: 1.75rem; position: relative;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); transform: translateY(15px);
-      transition: transform 0.25s ease; color: #1c1917; font-size: 14px;
+      box-shadow: 0 32px 80px rgba(28,22,18,0.28); transform: translateY(16px);
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); color: #2c2520; font-size: 14px;
     }
     .cdp-modal-overlay.open .cdp-modal-box { transform: translateY(0); }
+    .cdp-serif { font-family: 'DM Serif Display', Georgia, serif; }
+
     .cdp-close-btn {
       position: absolute; top: 1.25rem; right: 1.25rem; background: transparent;
-      border: none; font-size: 1.5rem; cursor: pointer; color: #a8a29e; line-height: 1;
+      border: none; font-size: 1.4rem; cursor: pointer; color: #9c8c7c; line-height: 1;
+      transition: color 0.15s;
     }
-    .cdp-close-btn:hover { color: #1c1917; }
+    .cdp-close-btn:hover { color: #2c2520; }
     .cdp-step { display: none; }
     .cdp-step.active { display: block; }
+
+    .cdp-prog-bar { height: 2px; flex: 1; border-radius: 2px; background: rgba(92,79,68,0.15); transition: background 0.35s; }
+    .cdp-prog-bar.done { background: #2c2520; }
+
     .cdp-grid-guests { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 1rem; }
     .cdp-tile {
       aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-      border-radius: 12px; border: 1.5px solid #e7e5e4; background: #fff;
-      font-size: 1.3rem; font-weight: 600; cursor: pointer; color: #1c1917;
-      transition: all 0.15s ease;
+      border-radius: 12px; border: 1.5px solid rgba(92,79,68,0.2); background: #fdfbf7;
+      font-size: 1.25rem; font-weight: 500; cursor: pointer; color: #2c2520;
+      transition: all 0.16s ease;
     }
-    .cdp-tile:hover { border-color: #92400e; color: #92400e; }
-    .cdp-tile.selected { background: #92400e; border-color: #92400e; color: #fff; }
+    .cdp-tile:hover { border-color: #8b5c2a; color: #8b5c2a; transform: translateY(-2px); }
+    .cdp-tile.selected { background: #2c2520; border-color: #2c2520; color: #fdfbf7; transform: scale(1.03); }
     .cdp-tile-plus {
-      grid-column: span 4; aspect-ratio: auto; padding: 12px; font-size: 0.9rem; font-weight: 600;
+      grid-column: span 4; aspect-ratio: auto; padding: 12px; font-size: 0.85rem; font-weight: 600;
     }
-    .cdp-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin: 10px 0; }
+
+    .cdp-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; margin: 10px 0; }
     .cdp-day {
       aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
       border-radius: 8px; border: 1.5px solid transparent; background: transparent;
-      cursor: pointer; font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; font-size: 0.8rem; font-weight: 500; color: #2c2520;
     }
-    .cdp-day:not(.disabled):not(.past):hover { background: #fef3c7; }
-    .cdp-day.selected { background: #92400e; color: #fff; }
-    .cdp-day.disabled, .cdp-day.past { color: #d6d3d1; cursor: not-allowed; }
-    .cdp-day.today { border-color: #fbbf24; font-weight: 700; }
+    .cdp-day:not(.disabled):not(.past):hover { background: #f5f0e8; }
+    .cdp-day.selected { background: #2c2520; color: #fdfbf7; }
+    .cdp-day.disabled, .cdp-day.past { color: rgba(92,79,68,0.25); cursor: not-allowed; }
+    .cdp-day.today { border-color: #8b5c2a; font-weight: 700; }
+
     .cdp-svc-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
     .cdp-svc-tab {
-      flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid #e7e5e4;
-      background: #fff; font-weight: 600; cursor: pointer; text-align: center;
+      flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid rgba(92,79,68,0.2);
+      background: #fdfbf7; font-weight: 600; cursor: pointer; text-align: center; color: #5c4f44;
+      font-size: 0.85rem; transition: all 0.16s;
     }
-    .cdp-svc-tab.selected { background: #92400e; border-color: #92400e; color: #fff; }
+    .cdp-svc-tab.selected { background: #2c2520; border-color: #2c2520; color: #fdfbf7; }
+
     .cdp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .cdp-chip {
-      padding: 8px 16px; border-radius: 9999px; border: 1.5px solid #e7e5e4;
-      background: #fff; font-weight: 500; cursor: pointer;
+      padding: 7px 15px; border-radius: 9999px; border: 1.5px solid rgba(92,79,68,0.2);
+      background: #fdfbf7; font-weight: 500; font-size: 0.85rem; cursor: pointer; color: #5c4f44;
+      transition: all 0.15s;
     }
-    .cdp-chip.selected { background: #92400e; border-color: #92400e; color: #fff; }
+    .cdp-chip:hover { border-color: #2c2520; color: #2c2520; }
+    .cdp-chip.selected { background: #2c2520; border-color: #2c2520; color: #fdfbf7; }
+
     .cdp-field { margin-bottom: 12px; }
-    .cdp-field label { display: block; font-weight: 600; font-size: 0.8rem; color: #57534e; margin-bottom: 4px; }
+    .cdp-field label { display: block; font-weight: 600; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: #5c4f44; margin-bottom: 4px; }
     .cdp-field input {
-      width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e7e5e4;
-      font-size: 0.95rem; outline: none; box-sizing: border-box;
+      width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid rgba(92,79,68,0.2);
+      font-size: 0.9rem; outline: none; box-sizing: border-box; background: #fff; color: #2c2520;
+      font-family: inherit; transition: border-color 0.15s;
     }
-    .cdp-field input:focus { border-color: #92400e; }
+    .cdp-field input:focus { border-color: #2c2520; }
+    .cdp-field input.error { border-color: #c0392b; }
+    .cdp-field-error { font-size: 0.7rem; color: #c0392b; margin-top: 3px; display: none; }
+    .cdp-field-error.show { display: block; }
+
     .cdp-btn-submit {
-      width: 100%; padding: 14px; border-radius: 12px; background: #92400e; color: #fff;
-      border: none; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
+      width: 100%; padding: 14px; border-radius: 9999px; background: #2c2520; color: #fdfbf7;
+      border: none; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      cursor: pointer; transition: background 0.18s, transform 0.18s; box-shadow: 0 4px 16px rgba(44,37,32,0.15);
     }
-    .cdp-btn-submit:hover { background: #78350f; }
-    .cdp-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    .cdp-btn-submit:hover { background: #8b5c2a; transform: translateY(-1px); }
+    .cdp-btn-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
     .cdp-floating-trigger {
       position: fixed; bottom: 24px; right: 24px; z-index: 999990;
-      background: #92400e; color: #fff; padding: 14px 22px; border-radius: 9999px;
-      font-weight: 600; font-size: 0.95rem; border: none; cursor: pointer;
-      box-shadow: 0 10px 25px rgba(146,64,14,0.35); display: flex; align-items: center; gap: 8px;
-      font-family: inherit; transition: transform 0.2s, background 0.2s;
+      background: #2c2520; color: #fdfbf7; padding: 14px 24px; border-radius: 9999px;
+      font-weight: 600; font-size: 0.85rem; letter-spacing: 0.04em; text-transform: uppercase;
+      border: none; cursor: pointer; box-shadow: 0 10px 30px rgba(44,37,32,0.3);
+      display: flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif;
+      transition: transform 0.2s, background 0.2s;
     }
-    .cdp-floating-trigger:hover { background: #78350f; transform: translateY(-2px); }
+    .cdp-floating-trigger:hover { background: #8b5c2a; transform: translateY(-2px); }
 
-    /* Smart Suggestions */
     .cdp-sugg-btn {
       width: 100%; display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 12px; border-radius: 12px; border: 1.5px solid #e7e5e4;
-      background: #fafaf9; cursor: pointer; transition: all 0.16s ease; text-align: left;
-      font-family: inherit;
+      padding: 10px 14px; border-radius: 12px; border: 1.5px solid rgba(92,79,68,0.18);
+      background: #f5f0e8; cursor: pointer; transition: all 0.16s ease; text-align: left;
+      font-family: inherit; margin-bottom: 6px;
     }
-    .cdp-sugg-btn:hover {
-      background: #fff; border-color: #92400e; box-shadow: 0 4px 14px rgba(146,64,14,0.1);
-      transform: translateY(-1px);
-    }
-    .cdp-sugg-btn.primary-sugg {
-      background: #fffbeb; border-color: #fde68a;
-    }
-    .cdp-sugg-btn.primary-sugg:hover {
-      background: #fef3c7; border-color: #92400e;
-    }
+    .cdp-sugg-btn:hover { background: #ede6d6; border-color: #2c2520; transform: translateY(-1px); }
+    .cdp-sugg-btn.primary-sugg { background: #f7ede0; border-color: rgba(139,92,42,0.35); }
+    .cdp-sugg-btn.primary-sugg:hover { background: #f0e0ca; border-color: #8b5c2a; }
   `;
 
   const styleEl = document.createElement('style');
@@ -128,379 +150,249 @@
       <div class="cdp-modal-box">
         <button class="cdp-close-btn" id="cdpClose">×</button>
 
+        <div style="margin-bottom:12px;">
+          <span class="cdp-serif" style="font-size:1.1rem;color:#2c2520;">Café de la Place</span>
+        </div>
+
+        <div style="display:flex;gap:4px;margin-bottom:20px;" id="cdpProgress">
+          <div class="cdp-prog-bar done" id="cdpBar1"></div>
+          <div class="cdp-prog-bar" id="cdpBar2"></div>
+          <div class="cdp-prog-bar" id="cdpBar3"></div>
+          <div class="cdp-prog-bar" id="cdpBar4"></div>
+        </div>
+
         <!-- Step 1: Guests -->
         <div class="cdp-step active" id="cdpStep1">
-          <p style="font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;margin:0 0 4px 0;">Étape 1 / 4</p>
-          <h3 style="font-size:1.3rem;font-weight:700;margin:0 0 1rem 0;">Combien de personnes ?</h3>
+          <p style="font-size:10px;font-weight:700;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">Étape 1 / 4</p>
+          <h3 class="cdp-serif" style="font-size:1.6rem;margin:0 0 1rem 0;color:#2c2520;">Combien de personnes ?</h3>
           <div class="cdp-grid-guests" id="cdpGuestGrid"></div>
         </div>
 
         <!-- Step 2: Date -->
         <div class="cdp-step" id="cdpStep2">
-          <button style="background:none;border:none;color:#78716c;font-size:12px;font-weight:600;cursor:pointer;padding:0;margin-bottom:8px;" id="cdpBack1">‹ Retour</button>
-          <p style="font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;margin:0 0 4px 0;">Étape 2 / 4</p>
-          <h3 style="font-size:1.3rem;font-weight:700;margin:0 0 10px 0;">Quelle date ?</h3>
+          <button style="background:none;border:none;color:#9c8c7c;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;padding:0;margin-bottom:10px;" id="cdpBack1">‹ Retour</button>
+          <p style="font-size:10px;font-weight:700;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">Étape 2 / 4</p>
+          <h3 class="cdp-serif" style="font-size:1.6rem;margin:0 0 10px 0;color:#2c2520;">Quelle date ?</h3>
 
-          <!-- Smart suggestions -->
           <div id="cdpSuggestionsBox"></div>
 
-          <div style="display:flex;align-items:center;gap:8px;margin:12px 0 10px 0;font-size:10px;font-weight:700;color:#a8a29e;text-transform:uppercase;">
-            <div style="flex:1;height:1px;background:#e7e5e4;"></div>
-            <span>ou choisir dans le calendrier</span>
-            <div style="flex:1;height:1px;background:#e7e5e4;"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin:12px 0 10px 0;font-size:10px;font-weight:700;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.08em;">
+            <div style="flex:1;height:1px;background:rgba(92,79,68,0.18);"></div>
+            <span>ou calendrier</span>
+            <div style="flex:1;height:1px;background:rgba(92,79,68,0.18);"></div>
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <button style="border:1px solid #e7e5e4;background:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;" id="cdpCalPrev">‹</button>
-            <span style="font-weight:700;font-size:14px;" id="cdpCalTitle"></span>
-            <button style="border:1px solid #e7e5e4;background:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;" id="cdpCalNext">›</button>
+            <button style="border:1.5px solid rgba(92,79,68,0.2);background:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;color:#5c4f44;" id="cdpCalPrev">‹</button>
+            <span style="font-weight:600;font-size:13px;color:#2c2520;" id="cdpCalTitle"></span>
+            <button style="border:1.5px solid rgba(92,79,68,0.2);background:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;color:#5c4f44;" id="cdpCalNext">›</button>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;font-weight:600;color:#a8a29e;">
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10px;font-weight:600;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.05em;">
             <div>Lu</div><div>Ma</div><div>Me</div><div>Je</div><div>Ve</div><div>Sa</div><div>Di</div>
           </div>
           <div class="cdp-cal-grid" id="cdpCalGrid"></div>
-          <p style="font-size:11px;color:#a8a29e;text-align:center;margin:4px 0 0 0;">Fermé le lundi et le dimanche</p>
+          <p style="font-size:11px;color:#9c8c7c;text-align:center;margin-top:6px;">Fermé le lundi et le dimanche</p>
         </div>
 
         <!-- Step 3: Service -->
         <div class="cdp-step" id="cdpStep3">
-          <button style="background:none;border:none;color:#78716c;font-size:12px;font-weight:600;cursor:pointer;padding:0;margin-bottom:8px;" id="cdpBack2">‹ Retour</button>
-          <p style="font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;margin:0 0 4px 0;">Étape 3 / 4</p>
-          <h3 style="font-size:1.3rem;font-weight:700;margin:0 0 12px 0;">Quel horaire ?</h3>
+          <button style="background:none;border:none;color:#9c8c7c;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;padding:0;margin-bottom:10px;" id="cdpBack2">‹ Retour</button>
+          <p style="font-size:10px;font-weight:700;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">Étape 3 / 4</p>
+          <h3 class="cdp-serif" style="font-size:1.6rem;margin:0 0 10px 0;color:#2c2520;">Quel créneau ?</h3>
           <div class="cdp-svc-tabs">
-            <button class="cdp-svc-tab" id="cdpTabMidi">🌞 Midi</button>
-            <button class="cdp-svc-tab" id="cdpTabSoir">🌙 Soir</button>
+            <button class="cdp-svc-tab" id="cdpTabMidi">Midi (11h45 – 13h)</button>
+            <button class="cdp-svc-tab" id="cdpTabSoir">Soir (18h30 – 20h30)</button>
           </div>
-          <div class="cdp-chips" id="cdpChips"></div>
+          <div class="cdp-chips" id="cdpTimeChips"></div>
         </div>
 
         <!-- Step 4: Contact -->
         <div class="cdp-step" id="cdpStep4">
-          <button style="background:none;border:none;color:#78716c;font-size:12px;font-weight:600;cursor:pointer;padding:0;margin-bottom:8px;" id="cdpBack3">‹ Retour</button>
-          <p style="font-size:11px;font-weight:700;color:#a8a29e;text-transform:uppercase;margin:0 0 4px 0;">Étape 4 / 4</p>
-          <h3 style="font-size:1.3rem;font-weight:700;margin:0 0 12px 0;">Vos coordonnées</h3>
+          <button style="background:none;border:none;color:#9c8c7c;font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;padding:0;margin-bottom:10px;" id="cdpBack3">‹ Retour</button>
+          <p style="font-size:10px;font-weight:700;color:#9c8c7c;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">Étape 4 / 4</p>
+          <h3 class="cdp-serif" style="font-size:1.6rem;margin:0 0 12px 0;color:#2c2520;">Vos coordonnées</h3>
 
           <div class="cdp-field">
             <label>Nom et prénom *</label>
-            <input type="text" id="cdpName" placeholder="Marie Dupont" required />
+            <input type="text" id="cdpName" placeholder="Marie Dupont" />
+            <p class="cdp-field-error" id="cdpErrName">Nom obligatoire.</p>
           </div>
           <div class="cdp-field">
-            <label>Téléphone *</label>
-            <input type="tel" id="cdpPhone" placeholder="+41 79 123 45 67" required />
+            <label>Téléphone <span style="font-weight:400;text-transform:none;">(ou e-mail)</span></label>
+            <input type="tel" id="cdpPhone" placeholder="+41 79 123 45 67" />
+            <p class="cdp-field-error" id="cdpErrPhone">Format invalide (+41...)</p>
           </div>
           <div class="cdp-field">
-            <label>E-mail (optionnel)</label>
-            <input type="email" id="cdpEmail" placeholder="contact@example.com" />
+            <label>E-mail <span style="font-weight:400;text-transform:none;">(ou téléphone)</span></label>
+            <input type="email" id="cdpEmail" placeholder="marie@example.com" />
+            <p class="cdp-field-error" id="cdpErrEmail">Adresse e-mail invalide.</p>
           </div>
           <div class="cdp-field">
             <label>Remarques (optionnel)</label>
-            <input type="text" id="cdpNotes" placeholder="Allergies, terrasse..." />
+            <input type="text" id="cdpNotes" placeholder="Terrasse, allergie..." />
           </div>
 
-          <div id="cdpSummary" style="background:#fef3c7;border:1px solid #fde68a;padding:10px;border-radius:10px;font-size:12px;color:#78350f;margin-bottom:12px;"></div>
+          <p style="font-size:11px;color:#9c8c7c;margin:8px 0;font-style:italic;">* Au moins un contact requis (téléphone ou e-mail).</p>
 
-          <button class="cdp-btn-submit" id="cdpSubmit">Confirmer la réservation</button>
-          <p id="cdpError" style="color:#ef4444;font-size:12px;text-align:center;display:none;margin-top:8px;"></p>
+          <div style="background:#f5f0e8;border:1px solid rgba(92,79,68,0.15);padding:12px;border-radius:10px;margin-bottom:14px;font-size:12px;line-height:1.5;" id="cdpSummary"></div>
+
+          <button class="cdp-btn-submit" id="cdpSubmitBtn">Confirmer la réservation</button>
+          <p style="color:#c0392b;font-size:12px;text-align:center;margin-top:8px;display:none;" id="cdpError"></p>
         </div>
 
         <!-- Step 5: Success -->
-        <div class="cdp-step" id="cdpStep5" style="text-align:center;padding:1.5rem 0;">
-          <div style="width:60px;height:60px;border-radius:50%;background:#dcfce7;color:#15803d;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1rem auto;">✓</div>
-          <h3 style="font-size:1.4rem;font-weight:700;margin:0 0 8px 0;">Merci !</h3>
-          <p style="color:#57534e;font-size:14px;margin:0 0 1rem 0;">Votre réservation a bien été enregistrée au <strong>Café de la Place</strong>.</p>
-          <button class="cdp-btn-submit" id="cdpDone" style="width:auto;padding:10px 24px;margin:0 auto;">Fermer</button>
-        </div>
-
-        <!-- Modal 8+ -->
-        <div id="cdpModal8" style="display:none;position:absolute;inset:0;background:#fff;border-radius:1.5rem;padding:2rem;text-align:center;flex-direction:column;justify-content:center;align-items:center;">
-          <div style="font-size:2.5rem;margin-bottom:8px;">📞</div>
-          <h4 style="font-size:1.2rem;font-weight:700;margin:0 0 8px 0;">Grand groupe</h4>
-          <p style="font-size:13px;color:#57534e;margin:0 0 1rem 0;">Pour les groupes de plus de 8 personnes, merci de nous appeler directement :</p>
-          <a href="tel:${CONFIG.phone.replace(/\\s/g,'')}" style="display:inline-block;background:#92400e;color:#fff;text-decoration:none;padding:12px 24px;border-radius:9999px;font-weight:700;">${CONFIG.phone}</a>
-          <button id="cdpClose8" style="background:none;border:none;color:#78716c;margin-top:1.5rem;cursor:pointer;">Fermer</button>
+        <div class="cdp-step" id="cdpStep5" style="text-align:center;padding:20px 0;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#f5f0e8;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:#2c2520;">✓</div>
+          <h3 class="cdp-serif" style="font-size:1.8rem;margin:0 0 8px 0;color:#2c2520;">Table réservée.</h3>
+          <p style="color:#5c4f44;font-size:13px;margin:0 0 16px 0;line-height:1.5;">Votre table est confirmée au Café de la Place.</p>
+          <div style="background:#f5f0e8;border-radius:10px;padding:12px;font-size:12px;color:#2c2520;margin-bottom:16px;" id="cdpSuccessSummary"></div>
+          <button class="cdp-btn-submit" id="cdpSuccessClose">Fermer</button>
         </div>
 
       </div>
     </div>
+
+    <!-- Trigger Button -->
+    <button class="cdp-floating-trigger" id="cdpTrigger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Réserver une table
+    </button>
   `;
 
   const container = document.createElement('div');
   container.innerHTML = modalHTML;
   document.body.appendChild(container);
 
-  // 3. Optional Floating Button (auto-created if no [data-cdp-booking] exists on page)
-  const existingTriggers = document.querySelectorAll('[data-cdp-booking], .cdp-booking-btn, #open-cdp-booking');
-  if (existingTriggers.length === 0) {
-    const floatBtn = document.createElement('button');
-    floatBtn.className = 'cdp-floating-trigger';
-    floatBtn.innerHTML = `<span>☕</span><span>Réserver une table</span>`;
-    floatBtn.onclick = openWidget;
-    document.body.appendChild(floatBtn);
-  }
+  // 3. Logic
+  const overlay = document.getElementById('cdpModal');
+  const trigger = document.getElementById('cdpTrigger');
+  const closeBtn = document.getElementById('cdpClose');
 
-  // Bind clicks on any custom buttons on the host website
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-cdp-booking], .cdp-booking-btn, #open-cdp-booking')) {
-      e.preventDefault();
-      openWidget();
-    }
-  });
-
-  // 4. Widget Logic
   function openWidget() {
-    document.getElementById('cdpModal').classList.add('open');
+    overlay.classList.add('open');
     if (!state.guests) { buildGuests(); setStep(1); }
   }
-  function closeWidget() {
-    document.getElementById('cdpModal').classList.remove('open');
-  }
+  function closeWidget() { overlay.classList.remove('open'); }
 
-  document.getElementById('cdpClose').onclick = closeWidget;
-  document.getElementById('cdpDone').onclick = closeWidget;
-  document.getElementById('cdpModal').onclick = (e) => { if (e.target.id === 'cdpModal') closeWidget(); };
+  trigger.onclick = openWidget;
+  closeBtn.onclick = closeWidget;
+  overlay.onclick = (e) => { if (e.target === overlay) closeWidget(); };
+  document.getElementById('cdpSuccessClose').onclick = closeWidget;
 
   function setStep(n) {
-    document.querySelectorAll('.cdp-step').forEach(s => s.classList.remove('active'));
-    document.getElementById('cdpStep' + n).classList.add('active');
-    if (n === 2) {
-      renderSuggestions();
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('cdpStep' + i);
+      if (el) el.classList.toggle('active', i === n);
+      const bar = document.getElementById('cdpBar' + i);
+      if (bar) bar.className = 'cdp-prog-bar' + (i <= n ? ' done' : '');
     }
-    if (n === 4) {
-      const str = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
-      document.getElementById('cdpSummary').innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span>📅 <strong>${str}</strong> à <strong>${state.time}</strong> (${state.service === 'midi' ? 'Midi' : 'Soir'}) pour <strong>${state.guests} pers.</strong></span>
-          <button type="button" id="cdpModifySlot" style="background:none;border:none;color:#92400e;font-size:11px;font-weight:700;text-decoration:underline;cursor:pointer;padding:2px 4px;">Modifier l'heure</button>
-        </div>
-      `;
-      setTimeout(() => {
-        const modBtn = document.getElementById('cdpModifySlot');
-        if (modBtn) {
-          modBtn.onclick = () => {
-            selectSvc(state.service || 'soir');
-            setStep(3);
-          };
-        }
-      }, 50);
-    }
-  }
-
-  function isClosedDay(d) {
-    const dow = d.getDay();
-    return dow === 0 || dow === 1; // 0 = Dimanche, 1 = Lundi
-  }
-
-  function getSuggestions() {
-    const list = [];
-    const now = new Date();
-    const currentHour = now.getHours();
-
-    // 1. Aujourd'hui
-    if (!isClosedDay(now)) {
-      if (currentHour < 13) {
-        list.push({
-          icon: '☀️',
-          label: "Aujourd'hui · Ce midi",
-          sublabel: "Déjeuner de saison",
-          time: '12:15',
-          service: 'midi',
-          date: new Date(now),
-          badge: '⚡ Disponible'
-        });
-      }
-      if (currentHour < 20) {
-        list.push({
-          icon: '🌙',
-          label: "Aujourd'hui · Ce soir",
-          sublabel: "Dîner au bistrot",
-          time: '19:30',
-          service: 'soir',
-          date: new Date(now),
-          badge: '🔥 Recommandé'
-        });
-      }
-    }
-
-    // 2. Demain
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    if (!isClosedDay(tomorrow)) {
-      list.push({
-        icon: '🌙',
-        label: "Demain · Soir",
-        sublabel: "Table pour dîner",
-        time: '19:30',
-        service: 'soir',
-        date: tomorrow,
-        badge: null
-      });
-    }
-
-    // 3. Prochain Vendredi ou Samedi (soirée la plus demandée)
-    for (let i = 1; i <= 6; i++) {
-      const nextD = new Date(now);
-      nextD.setDate(now.getDate() + i);
-      const dow = nextD.getDay();
-      if (dow === 5 || dow === 6) {
-        if (nextD.toDateString() !== tomorrow.toDateString() || isClosedDay(tomorrow)) {
-          list.push({
-            icon: '✨',
-            label: dow === 5 ? "Ce vendredi soir" : "Ce samedi soir",
-            sublabel: "Ambiance gourmande",
-            time: '19:30',
-            service: 'soir',
-            date: nextD,
-            badge: 'Week-end'
-          });
-          break;
-        }
-      }
-    }
-
-    // Si aujourd'hui est dimanche ou lundi (fermé)
-    if (list.length === 0 || isClosedDay(now)) {
-      for (let i = 1; i <= 3; i++) {
-        const nextD = new Date(now);
-        nextD.setDate(now.getDate() + i);
-        if (!isClosedDay(nextD)) {
-          list.unshift({
-            icon: '📅',
-            label: "Prochain service : Mardi",
-            sublabel: "Réouverture du bistrot",
-            time: '19:30',
-            service: 'soir',
-            date: nextD,
-            badge: 'Prochaine ouverture'
-          });
-          break;
-        }
-      }
-    }
-
-    return list.slice(0, 3);
-  }
-
-  function renderSuggestions() {
-    const box = document.getElementById('cdpSuggestionsBox');
-    if (!box) return;
-    box.innerHTML = '';
-
-    const suggestions = getSuggestions();
-    if (suggestions.length === 0) return;
-
-    const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;';
-    header.innerHTML = `
-      <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#92400e;letter-spacing:0.5px;">⚡ Suggestions en 1 clic</span>
-      <span style="font-size:10px;color:#78716c;background:#f5f5f4;padding:2px 6px;border-radius:9999px;">Date & heure auto</span>
-    `;
-    box.appendChild(header);
-
-    const listContainer = document.createElement('div');
-    listContainer.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
-
-    suggestions.forEach((sug, idx) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'cdp-sugg-btn' + (idx === 0 ? ' primary-sugg' : '');
-      btn.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:1.2rem;line-height:1;">${sug.icon}</span>
-          <div>
-            <div style="font-weight:700;font-size:13px;color:#1c1917;display:flex;align-items:center;gap:6px;">
-              <span>${sug.label}</span>
-              ${sug.badge ? `<span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9999px;">${sug.badge}</span>` : ''}
-            </div>
-            <div style="font-size:11px;color:#78716c;margin-top:1px;"><strong>${sug.time}</strong> · ${sug.sublabel}</div>
-          </div>
-        </div>
-        <div style="font-size:12px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:2px;">
-          <span>Choisir</span>
-          <span style="font-size:14px;">›</span>
-        </div>
-      `;
-      btn.onclick = () => {
-        state.date = sug.date;
-        state.service = sug.service;
-        state.time = sug.time;
-        setStep(4);
-      };
-      listContainer.appendChild(btn);
-    });
-
-    box.appendChild(listContainer);
+    if (n === 2) renderSuggestions();
+    if (n === 4) renderSummary();
   }
 
   document.getElementById('cdpBack1').onclick = () => setStep(1);
   document.getElementById('cdpBack2').onclick = () => setStep(2);
   document.getElementById('cdpBack3').onclick = () => setStep(3);
 
+  // Guests
   function buildGuests() {
-    const box = document.getElementById('cdpGuestGrid');
-    box.innerHTML = '';
+    const grid = document.getElementById('cdpGuestGrid');
+    grid.innerHTML = '';
     for (let i = 1; i <= 8; i++) {
       const b = document.createElement('button');
       b.className = 'cdp-tile';
       b.textContent = i;
       b.onclick = () => {
         state.guests = i;
-        document.querySelectorAll('.cdp-tile').forEach(t => t.classList.remove('selected'));
+        document.querySelectorAll('#cdpGuestGrid .cdp-tile').forEach(t => t.classList.remove('selected'));
         b.classList.add('selected');
-        setTimeout(() => { initCalendar(); setStep(2); }, 150);
+        setTimeout(() => { initCal(); setStep(2); }, 150);
       };
-      box.appendChild(b);
+      grid.appendChild(b);
     }
-    const b8 = document.createElement('button');
-    b8.className = 'cdp-tile cdp-tile-plus';
-    b8.textContent = '8+ personnes';
-    b8.onclick = () => { document.getElementById('cdpModal8').style.display = 'flex'; };
-    box.appendChild(b8);
+    const plus = document.createElement('button');
+    plus.className = 'cdp-tile cdp-tile-plus';
+    plus.textContent = '8+ personnes (021 943 10 37)';
+    plus.onclick = () => { window.location.href = 'tel:0219431037'; };
+    grid.appendChild(plus);
   }
 
-  document.getElementById('cdpClose8').onclick = () => { document.getElementById('cdpModal8').style.display = 'none'; };
+  function isClosedDay(d) {
+    const dow = d.getDay();
+    return dow === 0 || dow === 1;
+  }
 
-  function initCalendar() {
-    const today = new Date();
-    calYear = today.getFullYear();
-    calMonth = today.getMonth();
+  function getSuggestions() {
+    const list = [];
+    const now = new Date();
+    const h = now.getHours();
+
+    if (!isClosedDay(now)) {
+      if (h < 13) list.push({ label: "Aujourd'hui · Midi", sub: "11h45 – 13h00 · Déjeuner", time: '12:15', service: 'midi', date: new Date(now), primary: true, badge: 'Disponible' });
+      if (h < 20) list.push({ label: "Aujourd'hui · Ce soir", sub: "18h30 – 20h30 · Dîner", time: '19:30', service: 'soir', date: new Date(now), primary: !list.length, badge: 'Recommandé' });
+    }
+    const tom = new Date(now); tom.setDate(now.getDate() + 1);
+    if (!isClosedDay(tom)) list.push({ label: "Demain · Soir", sub: "18h30 – 20h30", time: '19:30', service: 'soir', date: tom, primary: false, badge: null });
+
+    for (let i = 2; i <= 7; i++) {
+      const d = new Date(now); d.setDate(now.getDate() + i);
+      const dow = d.getDay();
+      if ((dow === 5 || dow === 6) && d.toDateString() !== tom.toDateString()) {
+        list.push({ label: dow === 5 ? "Vendredi soir" : "Samedi soir", sub: "18h30 – 20h30 · Week-end", time: '19:30', service: 'soir', date: d, primary: false, badge: 'Week-end' });
+        break;
+      }
+    }
+
+    if (list.length === 0 || isClosedDay(now)) {
+      for (let i = 1; i <= 4; i++) {
+        const d = new Date(now); d.setDate(now.getDate() + i);
+        if (!isClosedDay(d)) {
+          const cap = d.toLocaleDateString('fr-CH', { weekday: 'long' });
+          list.unshift({ label: `Prochain service · ${cap.charAt(0).toUpperCase() + cap.slice(1)}`, sub: "18h30 – 20h30", time: '19:30', service: 'soir', date: d, primary: true, badge: 'Réouverture' });
+          break;
+        }
+      }
+    }
+    return list.slice(0, 3);
+  }
+
+  function renderSuggestions() {
+    const box = document.getElementById('cdpSuggestionsBox');
+    box.innerHTML = '';
+    const sugs = getSuggestions();
+    if (!sugs.length) return;
+
+    sugs.forEach((s, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cdp-sugg-btn' + (idx === 0 ? ' primary-sugg' : '');
+      btn.innerHTML = `
+        <div>
+          <div style="font-weight:600;font-size:13px;color:#2c2520;">
+            ${s.label}
+            ${s.badge ? `<span style="font-size:9px;background:rgba(44,37,32,0.1);color:#5c4f44;padding:2px 6px;border-radius:9999px;margin-left:6px;font-weight:700;">${s.badge}</span>` : ''}
+          </div>
+          <div style="font-size:11px;color:#9c8c7c;margin-top:2px;">${s.sub} · ${s.time}</div>
+        </div>
+        <span style="font-size:12px;font-weight:600;color:#2c2520;">Choisir ›</span>
+      `;
+      btn.onclick = () => {
+        state.date = s.date;
+        state.service = s.service;
+        state.time = s.time;
+        setStep(4);
+      };
+      box.appendChild(btn);
+    });
+  }
+
+  // Calendar
+  function initCal() {
+    const t = new Date();
+    calYear = t.getFullYear();
+    calMonth = t.getMonth();
     renderCal();
   }
-
-  function renderCal() {
-    document.getElementById('cdpCalTitle').textContent = MONTHS[calMonth] + ' ' + calYear;
-    const box = document.getElementById('cdpCalGrid');
-    box.innerHTML = '';
-    const today = new Date(); today.setHours(0,0,0,0);
-    const first = new Date(calYear, calMonth, 1);
-    let dow = first.getDay() - 1;
-    if (dow < 0) dow = 6;
-    for (let i = 0; i < dow; i++) box.appendChild(document.createElement('div'));
-    const days = new Date(calYear, calMonth + 1, 0).getDate();
-
-    for (let d = 1; d <= days; d++) {
-      const date = new Date(calYear, calMonth, d);
-      const b = document.createElement('button');
-      b.className = 'cdp-day';
-      b.textContent = d;
-      const isPast = date < today;
-      const isClosed = date.getDay() === 0 || date.getDay() === 1; // Sun & Mon closed
-      if (isPast || isClosed) {
-        b.classList.add(isPast ? 'past' : 'disabled');
-        b.disabled = true;
-      } else {
-        if (date.getTime() === today.getTime()) b.classList.add('today');
-        if (state.date && date.toDateString() === state.date.toDateString()) b.classList.add('selected');
-        b.onclick = () => {
-          state.date = date;
-          document.querySelectorAll('.cdp-day').forEach(c => c.classList.remove('selected'));
-          b.classList.add('selected');
-          setTimeout(() => { selectSvc(state.service || 'midi'); setStep(3); }, 150);
-        };
-      }
-      box.appendChild(b);
-    }
-  }
-
   document.getElementById('cdpCalPrev').onclick = () => {
     calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCal();
   };
@@ -508,69 +400,165 @@
     calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCal();
   };
 
-  function selectSvc(s) {
+  function renderCal() {
+    document.getElementById('cdpCalTitle').textContent = MONTHS[calMonth] + ' ' + calYear;
+    const grid = document.getElementById('cdpCalGrid');
+    grid.innerHTML = '';
+    const today = new Date(); today.setHours(0,0,0,0);
+    const first = new Date(calYear, calMonth, 1);
+    let dow = first.getDay() - 1; if (dow < 0) dow = 6;
+    for (let i = 0; i < dow; i++) grid.appendChild(document.createElement('div'));
+    const days = new Date(calYear, calMonth + 1, 0).getDate();
+
+    for (let d = 1; d <= days; d++) {
+      const dt = new Date(calYear, calMonth, d);
+      const cell = document.createElement('button');
+      cell.className = 'cdp-day';
+      cell.textContent = d;
+      const isPast = dt < today;
+      const isClosed = dt.getDay() === 0 || dt.getDay() === 1;
+
+      if (isPast || isClosed) { cell.classList.add(isPast ? 'past' : 'disabled'); cell.disabled = true; }
+      else {
+        if (dt.getTime() === today.getTime()) cell.classList.add('today');
+        if (state.date && dt.toDateString() === state.date.toDateString()) cell.classList.add('selected');
+        cell.onclick = () => {
+          state.date = dt;
+          document.querySelectorAll('.cdp-day').forEach(c => c.classList.remove('selected'));
+          cell.classList.add('selected');
+          setTimeout(() => { selectService(state.service || 'soir'); setStep(3); }, 150);
+        };
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  // Service & Slots
+  function selectService(s) {
     state.service = s;
     document.getElementById('cdpTabMidi').classList.toggle('selected', s === 'midi');
     document.getElementById('cdpTabSoir').classList.toggle('selected', s === 'soir');
-    const box = document.getElementById('cdpChips');
+    const box = document.getElementById('cdpTimeChips');
     box.innerHTML = '';
     SLOTS[s].forEach(slot => {
-      const chip = document.createElement('button');
-      chip.className = 'cdp-chip' + (state.time === slot ? ' selected' : '');
-      chip.textContent = slot;
-      chip.onclick = () => {
+      const b = document.createElement('button');
+      b.className = 'cdp-chip' + (state.time === slot ? ' selected' : '');
+      b.textContent = slot;
+      b.onclick = () => {
         state.time = slot;
         document.querySelectorAll('.cdp-chip').forEach(c => c.classList.remove('selected'));
-        chip.classList.add('selected');
+        b.classList.add('selected');
         setTimeout(() => setStep(4), 150);
       };
-      box.appendChild(chip);
+      box.appendChild(b);
     });
   }
+  document.getElementById('cdpTabMidi').onclick = () => selectService('midi');
+  document.getElementById('cdpTabSoir').onclick = () => selectService('soir');
 
-  document.getElementById('cdpTabMidi').onclick = () => selectSvc('midi');
-  document.getElementById('cdpTabSoir').onclick = () => selectSvc('soir');
+  function renderSummary() {
+    const box = document.getElementById('cdpSummary');
+    if (!state.date) return;
+    const str = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+    const cap = str.charAt(0).toUpperCase() + str.slice(1);
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <span style="font-weight:600;color:#2c2520;">${cap}</span> à <span style="font-weight:600;color:#2c2520;">${state.time}</span> (${state.service === 'midi' ? 'Midi' : 'Soir'})<br/>
+          <span style="color:#5c4f44;">Table pour ${state.guests} personne(s)</span>
+        </div>
+        <button type="button" id="cdpModTime" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;text-decoration:underline;color:#8b5c2a;">Modifier</button>
+      </div>
+    `;
+    document.getElementById('cdpModTime').onclick = () => { selectService(state.service || 'soir'); setStep(3); };
+  }
 
-  document.getElementById('cdpSubmit').onclick = async () => {
+  // Validation
+  function validatePhone(v) {
+    const clean = v.replace(/[\s\-\.\(\)]/g, '');
+    return /^(\+\d{7,15}|00\d{7,15}|0\d{8,11})$/.test(clean);
+  }
+  function validateEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  }
+
+  document.getElementById('cdpSubmitBtn').onclick = async () => {
     const name = document.getElementById('cdpName').value.trim();
     const phone = document.getElementById('cdpPhone').value.trim();
     const email = document.getElementById('cdpEmail').value.trim();
     const notes = document.getElementById('cdpNotes').value.trim();
     const err = document.getElementById('cdpError');
-    const btn = document.getElementById('cdpSubmit');
-
+    const btn = document.getElementById('cdpSubmitBtn');
     err.style.display = 'none';
-    if (!name || !phone) {
-      err.textContent = 'Nom et téléphone obligatoires.';
-      err.style.display = 'block';
-      return;
+
+    let ok = true;
+    if (!name || name.length < 2) {
+      document.getElementById('cdpName').classList.add('error');
+      document.getElementById('cdpErrName').classList.add('show');
+      ok = false;
+    } else {
+      document.getElementById('cdpName').classList.remove('error');
+      document.getElementById('cdpErrName').classList.remove('show');
     }
 
+    const hasPhone = phone.length > 0;
+    const hasEmail = email.length > 0;
+
+    if (!hasPhone && !hasEmail) {
+      document.getElementById('cdpPhone').classList.add('error');
+      document.getElementById('cdpErrPhone').classList.add('show');
+      document.getElementById('cdpErrPhone').textContent = 'Téléphone ou e-mail obligatoire.';
+      ok = false;
+    } else {
+      if (hasPhone && !validatePhone(phone)) {
+        document.getElementById('cdpPhone').classList.add('error');
+        document.getElementById('cdpErrPhone').classList.add('show');
+        document.getElementById('cdpErrPhone').textContent = 'Format invalide (+41...)';
+        ok = false;
+      } else {
+        document.getElementById('cdpPhone').classList.remove('error');
+        document.getElementById('cdpErrPhone').classList.remove('show');
+      }
+
+      if (hasEmail && !validateEmail(email)) {
+        document.getElementById('cdpEmail').classList.add('error');
+        document.getElementById('cdpErrEmail').classList.add('show');
+        ok = false;
+      } else {
+        document.getElementById('cdpEmail').classList.remove('error');
+        document.getElementById('cdpErrEmail').classList.remove('show');
+      }
+    }
+
+    if (!ok) return;
+
     btn.disabled = true;
-    btn.textContent = 'Envoi...';
+    btn.textContent = 'Enregistrement…';
 
     const payload = {
-      customer_name: name, customer_phone: phone, customer_email: email || null,
-      guests_count: state.guests, reservation_date: state.date.toISOString().split('T')[0],
-      service_type: state.service, reservation_time: state.time, notes: notes || null,
+      customer_name: name,
+      customer_phone: phone || null,
+      customer_email: email || null,
+      guests_count: state.guests,
+      reservation_date: state.date.toISOString().split('T')[0],
+      service_type: state.service,
+      reservation_time: state.time,
+      notes: notes || null,
       status: 'pending'
     };
 
     try {
-      const resp = await fetch(`${CONFIG.url}/rest/v1/reservations`, {
-        method: 'POST',
-        headers: {
-          'apikey': CONFIG.key,
-          'Authorization': `Bearer ${CONFIG.key}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(payload)
-      });
-      if (!resp.ok) throw new Error('API Error');
+      if (window.supabase) {
+        const sb = window.supabase.createClient(CONFIG.url, CONFIG.key);
+        const { error } = await sb.from('reservations').insert([payload]);
+        if (error) throw error;
+      }
+      const str = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+      document.getElementById('cdpSuccessSummary').textContent = `${name} · ${str} à ${state.time} · ${state.guests} pers.`;
       setStep(5);
     } catch(e) {
-      err.textContent = 'Erreur lors de la réservation. Veuillez téléphoner au restaurant.';
+      console.error(e);
+      err.textContent = 'Erreur lors de la réservation. Veuillez téléphoner au 021 943 10 37.';
       err.style.display = 'block';
     } finally {
       btn.disabled = false;
@@ -578,9 +566,4 @@
     }
   };
 
-  // Expose global controller
-  window.CafeDeLaPlace = {
-    open: openWidget,
-    close: closeWidget
-  };
 })();

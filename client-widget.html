@@ -9,767 +9,602 @@
   <script src="config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #f5f0e8;
+      --cream-dark: #ede6d6;
+      --stone: #2c2520;
+      --stone-mid: #5c4f44;
+      --stone-light: #9c8c7c;
+      --accent: #8b5c2a;
+      --white: #fdfbf7;
+    }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--cream);
+      color: var(--stone);
+      -webkit-font-smoothing: antialiased;
+    }
+    .serif { font-family: 'DM Serif Display', Georgia, serif; }
 
-    /* ── Step transitions ─────────────────────────────────── */
     .step { display: none; }
-    .step.active { display: block; animation: fadeSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(14px); }
+    .step.active { display: block; animation: fadeSlide 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Pill / chip ──────────────────────────────────────── */
-    .chip {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 0.6rem 1.2rem; border-radius: 9999px; font-size: 0.9rem;
-      font-weight: 500; cursor: pointer; border: 1.5px solid #e5e5e5;
-      background: #fff; color: #3f3f46;
-      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
-      white-space: nowrap;
+    .prog-bar {
+      height: 2px; flex: 1; border-radius: 2px;
+      background: rgba(92,79,68,0.15); transition: background 0.4s ease;
     }
-    .chip:hover { border-color: #a16207; color: #92400e; transform: translateY(-1px); }
-    .chip.selected { background: #92400e; border-color: #92400e; color: #fff; transform: scale(1.04); }
-    .chip:active { transform: scale(0.97); }
+    .prog-bar.done { background: var(--stone); }
 
-    /* ── Number tiles ─────────────────────────────────────── */
     .num-tile {
       aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-      border-radius: 1rem; border: 1.5px solid #e5e5e5; background: #fff;
-      font-size: 1.5rem; font-weight: 600; color: #1c1917; cursor: pointer;
-      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      user-select: none;
+      border-radius: 0.75rem; border: 1.5px solid rgba(92,79,68,0.2);
+      background: var(--white); font-size: 1.25rem; font-weight: 500;
+      color: var(--stone); cursor: pointer; transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
     }
-    .num-tile:hover { border-color: #a16207; color: #92400e; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(146,64,14,0.12); }
-    .num-tile.selected { background: #92400e; border-color: #92400e; color: #fff; transform: scale(1.06); }
-    .num-tile:active { transform: scale(0.96); }
-    .num-tile.special { font-size: 1.1rem; }
+    .num-tile:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,92,42,0.12); }
+    .num-tile.selected { background: var(--stone); border-color: var(--stone); color: var(--white); transform: scale(1.04); }
+    .num-tile.col-span-4 { aspect-ratio: auto; min-height: 3rem; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.02em; }
 
-    /* ── Suggestions ──────────────────────────────────────── */
     .sugg-card {
       width: 100%; display: flex; align-items: center; justify-content: space-between;
-      padding: 0.75rem 1rem; border-radius: 0.875rem; border: 1.5px solid #e5e5e5;
-      background: #fafaf9; cursor: pointer; transition: all 0.16s ease; text-align: left;
+      padding: 0.875rem 1rem; border-radius: 0.875rem;
+      border: 1.5px solid rgba(92,79,68,0.18);
+      background: var(--cream); cursor: pointer; text-align: left;
+      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
     }
-    .sugg-card:hover {
-      background: #fff; border-color: #92400e; box-shadow: 0 4px 14px rgba(146,64,14,0.1);
-      transform: translateY(-1px);
-    }
-    .sugg-card.primary-sugg {
-      background: #fffbeb; border-color: #fde68a;
-    }
-    .sugg-card.primary-sugg:hover {
-      background: #fef3c7; border-color: #92400e;
-    }
+    .sugg-card:hover { border-color: var(--stone); background: var(--cream-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(28,22,18,0.08); }
+    .sugg-card.primary-sugg { border-color: rgba(139,92,42,0.35); background: #f7ede0; }
+    .sugg-card.primary-sugg:hover { border-color: var(--accent); background: #f0e0ca; }
 
-    /* ── Date grid ────────────────────────────────────────── */
-    .date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
     .day-cell {
-      aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; border-radius: 0.6rem; cursor: pointer;
-      font-size: 0.8rem; font-weight: 500; transition: all 0.16s ease;
-      border: 1.5px solid transparent;
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: 0.5rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;
+      border: 1.5px solid transparent; transition: all 0.15s ease; color: var(--stone);
     }
-    .day-cell:not(.disabled):not(.past):hover { background: #fef3c7; border-color: #fbbf24; }
-    .day-cell.selected { background: #92400e; color: #fff; border-color: #92400e; }
-    .day-cell.disabled, .day-cell.past { color: #d4d4d8; cursor: not-allowed; }
-    .day-cell.today { border-color: #fbbf24; font-weight: 700; }
-    .day-name { font-size: 0.65rem; font-weight: 600; color: #a1a1aa; margin-bottom: 2px; }
+    .day-cell:not(.disabled):not(.past):hover { background: var(--cream); border-color: var(--stone-light); }
+    .day-cell.selected { background: var(--stone); color: var(--white); border-color: var(--stone); }
+    .day-cell.disabled, .day-cell.past { color: rgba(92,79,68,0.25); cursor: not-allowed; }
+    .day-cell.today { border-color: var(--accent); font-weight: 700; }
 
-    /* ── Service tabs ─────────────────────────────────────── */
     .svc-tab {
-      flex: 1; padding: 1.2rem; border-radius: 1rem; border: 2px solid #e5e5e5;
-      font-size: 1rem; font-weight: 600; cursor: pointer; text-align: center;
-      background: #fff; color: #3f3f46; transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+      flex: 1; padding: 0.875rem; border-radius: 0.75rem;
+      border: 1.5px solid rgba(92,79,68,0.2);
+      font-size: 0.875rem; font-weight: 600; letter-spacing: 0.02em; cursor: pointer;
+      text-align: center; background: var(--white); color: var(--stone-mid);
+      transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
     }
-    .svc-tab:hover { border-color: #a16207; }
-    .svc-tab.selected { background: #92400e; border-color: #92400e; color: #fff; }
+    .svc-tab:hover { border-color: var(--stone); color: var(--stone); }
+    .svc-tab.selected { background: var(--stone); border-color: var(--stone); color: var(--white); }
 
-    /* ── Primary button ───────────────────────────────────── */
-    .btn-primary {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-      width: 100%; padding: 1rem 1.5rem; background: #92400e; color: #fff;
-      border-radius: 0.875rem; font-weight: 600; font-size: 1rem;
-      border: none; cursor: pointer; transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
-      box-shadow: 0 2px 12px rgba(146,64,14,0.2);
+    .chip {
+      padding: 0.55rem 1rem; border-radius: 9999px; font-size: 0.875rem;
+      font-weight: 500; cursor: pointer; border: 1.5px solid rgba(92,79,68,0.2);
+      background: var(--white); color: var(--stone-mid); transition: all 0.18s ease;
     }
-    .btn-primary:hover { background: #7c2d12; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(146,64,14,0.28); }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-primary:disabled { background: #d4d4d8; cursor: not-allowed; box-shadow: none; transform: none; }
+    .chip:hover { border-color: var(--stone); color: var(--stone); }
+    .chip.selected { background: var(--stone); border-color: var(--stone); color: var(--white); }
 
-    .btn-ghost {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      padding: 0.6rem 1rem; background: transparent; color: #71717a;
-      border-radius: 0.6rem; font-weight: 500; font-size: 0.9rem;
-      border: none; cursor: pointer; transition: all 0.16s ease;
-    }
-    .btn-ghost:hover { background: #f4f4f5; color: #3f3f46; }
-
-    /* ── Input field ──────────────────────────────────────── */
     .field-input {
       width: 100%; padding: 0.875rem 1rem; border-radius: 0.75rem;
-      border: 1.5px solid #e5e5e5; font-size: 1rem; font-family: inherit;
-      color: #1c1917; background: #fff; outline: none;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      border: 1.5px solid rgba(92,79,68,0.2); font-size: 0.9rem;
+      font-family: inherit; color: var(--stone); background: var(--white);
+      outline: none; transition: border-color 0.18s, box-shadow 0.18s;
     }
-    .field-input:focus { border-color: #a16207; box-shadow: 0 0 0 3px rgba(161,98,7,0.1); }
-    .field-input.error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
-    .field-label { font-size: 0.85rem; font-weight: 600; color: #52525b; margin-bottom: 0.35rem; display: block; }
+    .field-input:focus { border-color: var(--stone); box-shadow: 0 0 0 3px rgba(44,37,32,0.08); }
+    .field-input.error { border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192,57,43,0.08); }
+    .field-input.valid { border-color: #2d6a4f; }
+    .field-label { font-size: 0.75rem; font-weight: 600; color: var(--stone-mid); margin-bottom: 0.4rem; display: block; letter-spacing: 0.04em; text-transform: uppercase; }
+    .field-error { font-size: 0.7rem; color: #c0392b; margin-top: 0.3rem; display: none; }
+    .field-error.show { display: block; }
 
-    /* ── Progress bar ─────────────────────────────────────── */
-    .progress-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: #e5e5e5; transition: all 0.3s ease;
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.875rem 1.75rem; background: var(--stone); color: var(--white);
+      border-radius: 9999px; font-weight: 600; font-size: 0.875rem;
+      letter-spacing: 0.04em; text-transform: uppercase; border: none; cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.16,1,0.3,1); box-shadow: 0 2px 16px rgba(44,37,32,0.15);
     }
-    .progress-dot.done { background: #92400e; }
-    .progress-dot.active { background: #92400e; transform: scale(1.4); }
+    .btn-primary:hover { background: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,92,42,0.22); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { background: rgba(92,79,68,0.3); cursor: not-allowed; transform: none; box-shadow: none; }
 
-    /* ── Modal ────────────────────────────────────────────── */
+    .btn-ghost-sm {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--stone-light); background: none; border: none; cursor: pointer;
+      transition: color 0.18s; padding: 0;
+    }
+    .btn-ghost-sm:hover { color: var(--stone); }
+
+    .or-divider {
+      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--stone-light);
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(92,79,68,0.18);
+    }
+
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center; z-index: 50;
+      position: fixed; inset: 0; background: rgba(28,22,18,0.65); backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
       opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
     }
     .modal-overlay.open { opacity: 1; pointer-events: auto; }
-    .modal-box { background: #fff; border-radius: 1.5rem; padding: 2rem; max-width: 360px; width: 90%;
-      transform: scale(0.92) translateY(20px); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+    .modal-card {
+      background: var(--white); border-radius: 1.5rem; max-width: 360px; width: 90%;
+      padding: 2rem; transform: scale(0.94); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 24px 60px rgba(28,22,18,0.25); text-align: center;
     }
-    .modal-overlay.open .modal-box { transform: scale(1) translateY(0); }
-
-    /* ── Calendar nav ─────────────────────────────────────── */
-    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-    .cal-btn { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid #e5e5e5;
-      background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; transition: all 0.16s; color: #52525b; }
-    .cal-btn:hover { background: #fef3c7; border-color: #fbbf24; }
-
-    /* ── Success state ────────────────────────────────────── */
-    .success-ring {
-      width: 80px; height: 80px; border-radius: 50%; background: #dcfce7;
-      display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;
-      animation: popIn 0.5s cubic-bezier(0.16,1,0.3,1);
-    }
-    @keyframes popIn {
-      from { transform: scale(0.5); opacity: 0; }
-      to   { transform: scale(1);   opacity: 1; }
-    }
+    .modal-overlay.open .modal-card { transform: scale(1); }
   </style>
 </head>
-<body class="min-h-screen bg-[#fafaf8]">
+<body class="min-h-screen flex flex-col justify-between p-4 sm:p-6 md:p-10">
 
-  <!-- ════════════════════ HERO HEADER ════════════════════ -->
-  <header class="text-center pt-10 pb-6 px-4">
-    <div class="inline-flex items-center gap-2 mb-3">
-      <span class="text-2xl">☕</span>
-    </div>
-    <h1 class="text-2xl font-bold tracking-tight text-[#1c1917]">Café de la Place</h1>
-    <p class="text-sm text-zinc-500 mt-1">Saint-Légier · Réservation en ligne</p>
+  <!-- Header -->
+  <header class="text-center py-6">
+    <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Saint-Légier · Suisse</p>
+    <h1 class="serif text-3xl sm:text-4xl text-[var(--stone)]">Café de la Place</h1>
+    <p class="text-xs text-[var(--stone-mid)] mt-1 font-light">Réservation en ligne instantanée</p>
   </header>
 
-  <!-- ════════════════════ WIZARD CARD ════════════════════ -->
-  <main class="max-w-md mx-auto px-4 pb-16">
-
-    <!-- Progress dots -->
-    <div class="flex items-center justify-center gap-2 mb-6" id="progressDots">
-      <div class="progress-dot active" id="dot-1"></div>
-      <div class="progress-dot" id="dot-2"></div>
-      <div class="progress-dot" id="dot-3"></div>
-      <div class="progress-dot" id="dot-4"></div>
-      <div class="progress-dot" id="dot-5"></div>
+  <!-- Wizard Card -->
+  <main class="w-full max-w-md mx-auto my-auto">
+    <!-- Progress -->
+    <div class="flex gap-1.5 mb-6" id="progressBars">
+      <div class="prog-bar done" id="bar-1"></div>
+      <div class="prog-bar" id="bar-2"></div>
+      <div class="prog-bar" id="bar-3"></div>
+      <div class="prog-bar" id="bar-4"></div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.08)] border border-zinc-100 overflow-hidden">
+    <div class="bg-[var(--white)] rounded-2xl p-6 sm:p-8 border border-[rgba(92,79,68,0.15)] shadow-[0_16px_40px_rgba(44,37,32,0.06)] overflow-hidden">
 
-      <!-- ─── STEP 1 : Nombre de personnes ─── -->
-      <div class="step active p-6" id="step-1">
-        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">Étape 1 / 4</p>
-        <h2 class="text-xl font-bold text-zinc-900 mb-6">Combien de personnes ?</h2>
-        <div class="grid grid-cols-4 gap-3" id="guestGrid">
-          <!-- Tiles injected by JS -->
-        </div>
+      <!-- Step 1: Guests -->
+      <div class="step active" id="step-1">
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 1 / 4</p>
+        <h2 class="serif text-2xl text-[var(--stone)] mb-6">Combien de personnes ?</h2>
+        <div class="grid grid-cols-4 gap-2.5" id="guestGrid"></div>
       </div>
 
-      <!-- ─── STEP 2 : Date ─── -->
-      <div class="step p-6" id="step-2">
-        <button class="btn-ghost mb-4" onclick="goStep(1)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <!-- Step 2: Date -->
+      <div class="step" id="step-2">
+        <button class="btn-ghost-sm mb-4" onclick="goStep(1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           Retour
         </button>
-        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">Étape 2 / 4</p>
-        <h2 class="text-xl font-bold text-zinc-900 mb-5">Quelle date ?</h2>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 2 / 4</p>
+        <h2 class="serif text-2xl text-[var(--stone)] mb-5">Quelle date ?</h2>
 
-        <!-- Smart suggestions -->
-        <div id="quickSuggestions" class="mb-4"></div>
+        <div id="quickSuggestions" class="mb-4 space-y-2"></div>
 
-        <div class="flex items-center gap-2 my-4 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-          <div class="flex-1 h-px bg-zinc-200"></div>
-          <span>ou choisir dans le calendrier</span>
-          <div class="flex-1 h-px bg-zinc-200"></div>
-        </div>
+        <div class="or-divider my-4">ou choisir dans le calendrier</div>
 
-        <!-- Calendar -->
-        <div class="cal-nav">
-          <button class="cal-btn" id="calPrev" onclick="shiftMonth(-1)">‹</button>
-          <span class="font-semibold text-zinc-800 text-sm" id="calTitle"></span>
-          <button class="cal-btn" id="calNext" onclick="shiftMonth(1)">›</button>
+        <div class="flex items-center justify-between mb-3">
+          <button onclick="shiftMonth(-1)" style="background:none;border:1.5px solid rgba(92,79,68,0.2);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--stone-mid);">‹</button>
+          <span class="font-semibold text-sm text-[var(--stone)]" id="calTitle"></span>
+          <button onclick="shiftMonth(1)" style="background:none;border:1.5px solid rgba(92,79,68,0.2);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--stone-mid);">›</button>
         </div>
-        <div class="grid grid-cols-7 gap-1 mb-2">
-          <div class="text-center text-xs font-semibold text-zinc-400 py-1">Lu</div>
-          <div class="text-center text-xs font-semibold text-zinc-400 py-1">Ma</div>
-          <div class="text-center text-xs font-semibold text-zinc-400 py-1">Me</div>
-          <div class="text-center text-xs font-semibold text-zinc-400 py-1">Je</div>
-          <div class="text-center text-xs font-semibold text-zinc-400 py-1">Ve</div>
-          <div class="text-center text-xs font-semibold text-zinc-400 py-1">Sa</div>
-          <div class="text-center text-xs font-semibold text-zinc-400 py-1">Di</div>
+        <div class="grid grid-cols-7 gap-0.5 text-center mb-2">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Lu</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Ma</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Me</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Je</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Ve</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Sa</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Di</div>
         </div>
-        <div id="calGrid" class="grid grid-cols-7 gap-1 mb-5"></div>
-        <p class="text-xs text-zinc-400 text-center">Fermé le lundi et le dimanche</p>
+        <div id="calGrid" class="grid grid-cols-7 gap-0.5 mb-3"></div>
+        <p class="text-[0.7rem] text-[var(--stone-light)] text-center tracking-wide">Fermé le lundi et le dimanche</p>
       </div>
 
-      <!-- ─── STEP 3 : Service & Horaire ─── -->
-      <div class="step p-6" id="step-3">
-        <button class="btn-ghost mb-4" onclick="goStep(2)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <!-- Step 3: Service & Time -->
+      <div class="step" id="step-3">
+        <button class="btn-ghost-sm mb-4" onclick="goStep(2)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           Retour
         </button>
-        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">Étape 3 / 4</p>
-        <h2 class="text-xl font-bold text-zinc-900 mb-5">Quel service ?</h2>
-
-        <!-- Service tabs -->
-        <div class="flex gap-3 mb-6">
-          <button class="svc-tab" id="tabMidi" onclick="selectService('midi')">
-            🌞 Midi
-          </button>
-          <button class="svc-tab" id="tabSoir" onclick="selectService('soir')">
-            🌙 Soir
-          </button>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 3 / 4</p>
+        <h2 class="serif text-2xl text-[var(--stone)] mb-5">Quel créneau ?</h2>
+        <div class="flex gap-2.5 mb-5">
+          <button class="svc-tab" id="tabMidi" onclick="selectService('midi')">Midi</button>
+          <button class="svc-tab" id="tabSoir" onclick="selectService('soir')">Soir</button>
         </div>
-
-        <!-- Time chips -->
+        <div id="timeSlotInfo" class="text-xs text-[var(--stone-light)] mb-3 font-light"></div>
         <div id="timeChips" class="flex flex-wrap gap-2"></div>
       </div>
 
-      <!-- ─── STEP 4 : Contact ─── -->
-      <div class="step p-6" id="step-4">
-        <button class="btn-ghost mb-4" onclick="goStep(3)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <!-- Step 4: Contact -->
+      <div class="step" id="step-4">
+        <button class="btn-ghost-sm mb-4" onclick="goStep(3)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           Retour
         </button>
-        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-1">Étape 4 / 4</p>
-        <h2 class="text-xl font-bold text-zinc-900 mb-6">Vos coordonnées</h2>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 4 / 4</p>
+        <h2 class="serif text-2xl text-[var(--stone)] mb-5">Vos coordonnées</h2>
 
         <div class="space-y-4">
           <div>
-            <label class="field-label" for="fName">Prénom et nom *</label>
+            <label class="field-label">Nom et prénom *</label>
             <input class="field-input" id="fName" type="text" placeholder="Marie Dupont" autocomplete="name" />
+            <p class="field-error" id="errName">Veuillez indiquer votre prénom et nom.</p>
           </div>
+
           <div>
-            <label class="field-label" for="fPhone">Téléphone *</label>
+            <label class="field-label">Téléphone <span class="font-light normal-case tracking-normal">(requis si pas d'e-mail)</span></label>
             <input class="field-input" id="fPhone" type="tel" placeholder="+41 79 123 45 67" autocomplete="tel" />
+            <p class="field-error" id="errPhone">Format invalide. Ex : +41 79 123 45 67</p>
           </div>
+
           <div>
-            <label class="field-label" for="fEmail">E-mail <span class="font-normal text-zinc-400">(optionnel)</span></label>
+            <label class="field-label">E-mail <span class="font-light normal-case tracking-normal">(requis si pas de téléphone)</span></label>
             <input class="field-input" id="fEmail" type="email" placeholder="marie@example.com" autocomplete="email" />
+            <p class="field-error" id="errEmail">Adresse e-mail invalide.</p>
           </div>
+
           <div>
-            <label class="field-label" for="fNotes">Allergies ou remarques <span class="font-normal text-zinc-400">(optionnel)</span></label>
-            <input class="field-input" id="fNotes" type="text" placeholder="Ex : allergie aux noix, chaise haute…" />
+            <label class="field-label">Remarques <span class="font-light normal-case tracking-normal">(optionnel)</span></label>
+            <input class="field-input" id="fNotes" type="text" placeholder="Terrasse, allergie gluten…" />
           </div>
         </div>
 
-        <!-- Summary pill -->
-        <div id="summaryPill" class="mt-5 rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-sm text-amber-900"></div>
+        <p class="text-[0.7rem] text-[var(--stone-light)] mt-3 italic">* Au moins un moyen de contact est requis (téléphone ou e-mail).</p>
+
+        <div id="summaryBox" class="mt-5 p-4 rounded-xl text-sm" style="background:var(--cream); border:1px solid rgba(92,79,68,0.15);"></div>
 
         <div class="mt-5">
-          <button class="btn-primary" id="btnSubmit" onclick="submitReservation()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <button class="btn-primary w-full justify-center" id="btnSubmit" onclick="submitReservation()">
             Confirmer la réservation
           </button>
-          <p id="submitError" class="mt-2 text-red-500 text-sm text-center hidden"></p>
+          <p id="submitError" class="text-red-700 text-xs text-center mt-3 font-medium hidden"></p>
         </div>
       </div>
 
-      <!-- ─── STEP 5 : Merci ─── -->
-      <div class="step p-8 text-center" id="step-5">
-        <div class="success-ring">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      <!-- Step 5: Finished -->
+      <div class="step text-center py-8" id="step-5">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--stone)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <h2 class="text-xl font-bold text-zinc-900 mb-3">Merci !</h2>
-        <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-          <p class="text-green-800 font-semibold text-sm">Votre réservation est enregistrée !</p>
-          <p class="text-green-700 text-sm mt-1">À très bientôt au <span class="font-semibold">Café de la Place</span>.</p>
-        </div>
-        <p id="confirmDetail" class="text-sm text-zinc-500 mb-6"></p>
-        <button class="btn-primary" onclick="resetWizard()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.07"/></svg>
-          Nouvelle réservation
-        </button>
+        <h3 class="serif text-3xl text-[var(--stone)] mb-3">Table réservée.</h3>
+        <p class="text-[var(--stone-mid)] text-sm font-light mb-5 max-w-xs mx-auto">
+          Votre réservation est bien enregistrée au <strong class="font-semibold text-[var(--stone)]">Café de la Place</strong>.
+        </p>
+        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-6 font-light" style="background:var(--cream);"></div>
+        <button onclick="location.reload()" class="btn-primary px-8">Nouvelle réservation</button>
       </div>
 
-    </div><!-- /card -->
+    </div>
   </main>
 
-  <!-- ════════════════════ MODAL: Groupe 8+ ════════════════════ -->
+  <!-- Modal 8+ -->
   <div class="modal-overlay" id="modal8plus">
-    <div class="modal-box text-center">
-      <div class="text-3xl mb-3">📞</div>
-      <h3 class="text-lg font-bold text-zinc-900 mb-2">Grand groupe</h3>
-      <p class="text-zinc-600 text-sm leading-relaxed mb-5">
-        Pour les groupes de plus de <strong>8 personnes</strong>, merci de nous appeler directement :
+    <div class="modal-card">
+      <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-2">Grande tablée</p>
+      <h4 class="serif text-2xl text-[var(--stone)] mb-3">8 personnes ou plus</h4>
+      <p class="text-[var(--stone-mid)] text-xs font-light leading-relaxed mb-6">
+        Pour les réservations de groupe, merci de nous contacter par téléphone afin de préparer au mieux votre venue.
       </p>
-      <a href="tel:0219431037" class="inline-flex items-center gap-2 bg-amber-800 text-white rounded-xl px-6 py-3 font-semibold text-base hover:bg-amber-900 transition-colors">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.38 2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.17 6.17l.97-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-        021 943 10 37
-      </a>
-      <br/><br/>
-      <button class="btn-ghost text-zinc-500" onclick="closeModal()">Fermer</button>
+      <a href="tel:0219431037" class="btn-primary inline-flex mb-4">021 943 10 37</a>
+      <div>
+        <button onclick="document.getElementById('modal8plus').classList.remove('open')" class="btn-ghost-sm">Fermer</button>
+      </div>
     </div>
   </div>
 
+  <footer class="text-center py-6 text-xs text-[var(--stone-light)]">
+    Café de la Place · Place du Village · 1806 Saint-Légier
+  </footer>
+
   <script>
-  // ────────────────────────────────────────────────────────────
-  //  STATE
-  // ────────────────────────────────────────────────────────────
-  const state = {
-    guests: null,
-    date: null,       // Date object
-    service: null,    // 'midi' | 'soir'
-    time: null,
-  };
+    const state = { guests: null, date: null, service: null, time: null };
+    const SLOTS = {
+      midi: ['11:45','12:00','12:15','12:30','13:00'],
+      soir: ['18:30','19:00','19:30','20:00','20:30'],
+    };
+    const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    let calYear, calMonth;
+    let sbClient = null;
 
-  const SLOTS = {
-    midi: ['11:45','12:00','12:15','12:30','13:00'],
-    soir: ['18:30','19:00','19:30','20:00','20:30'],
-  };
-
-  const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin',
-                     'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-
-  let calYear, calMonth;
-
-  // ── Supabase init ──
-  let sbClient;
-  try {
-    const cfg = window.SUPABASE_CONFIG;
-    if (cfg && cfg.url && !cfg.url.includes('VOTRE')) {
-      sbClient = window.supabase.createClient(cfg.url, cfg.key);
-    }
-  } catch(e) { console.warn('Supabase non configuré:', e); }
-
-  // ────────────────────────────────────────────────────────────
-  //  STEP NAVIGATION
-  // ────────────────────────────────────────────────────────────
-  let currentStep = 1;
-
-  function goStep(n) {
-    document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-    document.getElementById('step-' + n).classList.add('active');
-    currentStep = n;
-    updateDots();
-    if (n === 2) renderSuggestions();
-    if (n === 4) renderSummary();
-  }
-
-  function isClosedDay(d) {
-    const dow = d.getDay();
-    return dow === 0 || dow === 1; // Dimanche & Lundi
-  }
-
-  function getSuggestions() {
-    const list = [];
-    const now = new Date();
-    const currentHour = now.getHours();
-
-    // 1. Aujourd'hui
-    if (!isClosedDay(now)) {
-      if (currentHour < 13) {
-        list.push({
-          icon: '☀️',
-          label: "Aujourd'hui · Midi",
-          sublabel: "Déjeuner de saison",
-          time: '12:15',
-          service: 'midi',
-          date: new Date(now),
-          badge: '⚡ Disponible'
-        });
+    try {
+      const cfg = window.SUPABASE_CONFIG;
+      if (cfg && cfg.url && !cfg.url.includes('VOTRE')) {
+        sbClient = window.supabase.createClient(cfg.url, cfg.key);
       }
-      if (currentHour < 20) {
-        list.push({
-          icon: '🌙',
-          label: "Aujourd'hui · Ce soir",
-          sublabel: "Dîner au bistrot",
-          time: '19:30',
-          service: 'soir',
-          date: new Date(now),
-          badge: '🔥 Recommandé'
-        });
+    } catch(e) { console.warn(e); }
+
+    function goStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step-' + n).classList.add('active');
+      for (let i = 1; i <= 4; i++) {
+        const bar = document.getElementById('bar-' + i);
+        if (bar) bar.className = 'prog-bar' + (i <= n ? ' done' : '');
       }
+      if (n === 2) renderSuggestions();
+      if (n === 4) renderSummary();
     }
 
-    // 2. Demain
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    if (!isClosedDay(tomorrow)) {
-      list.push({
-        icon: '🌙',
-        label: "Demain · Soir",
-        sublabel: "Table pour dîner",
-        time: '19:30',
-        service: 'soir',
-        date: tomorrow,
-        badge: null
+    function isClosedDay(d) {
+      const dow = d.getDay();
+      return dow === 0 || dow === 1;
+    }
+
+    function getSuggestions() {
+      const list = [];
+      const now = new Date();
+      const h = now.getHours();
+
+      if (!isClosedDay(now)) {
+        if (h < 13) list.push({ label: "Aujourd'hui · Midi", sub: "11h45 – 13h00 · Déjeuner de saison", time: '12:15', service: 'midi', date: new Date(now), primary: true, badge: 'Disponible' });
+        if (h < 20) list.push({ label: "Aujourd'hui · Ce soir", sub: "18h30 – 20h30 · Dîner au bistrot", time: '19:30', service: 'soir', date: new Date(now), primary: !list.length, badge: 'Recommandé' });
+      }
+      const tom = new Date(now); tom.setDate(now.getDate() + 1);
+      if (!isClosedDay(tom)) list.push({ label: "Demain · Soir", sub: "18h30 – 20h30 · Table pour dîner", time: '19:30', service: 'soir', date: tom, primary: false, badge: null });
+
+      for (let i = 2; i <= 7; i++) {
+        const d = new Date(now); d.setDate(now.getDate() + i);
+        const dow = d.getDay();
+        if ((dow === 5 || dow === 6) && d.toDateString() !== tom.toDateString()) {
+          list.push({ label: dow === 5 ? "Vendredi soir" : "Samedi soir", sub: "18h30 – 20h30 · Ambiance gourmande", time: '19:30', service: 'soir', date: d, primary: false, badge: 'Week-end' });
+          break;
+        }
+      }
+
+      if (list.length === 0 || isClosedDay(now)) {
+        for (let i = 1; i <= 4; i++) {
+          const d = new Date(now); d.setDate(now.getDate() + i);
+          if (!isClosedDay(d)) {
+            const dayName = d.toLocaleDateString('fr-CH', { weekday: 'long' });
+            const cap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+            list.unshift({ label: `Prochain service · ${cap}`, sub: "18h30 – 20h30 · Réouverture du bistrot", time: '19:30', service: 'soir', date: d, primary: true, badge: 'Prochaine ouverture' });
+            break;
+          }
+        }
+      }
+      return list.slice(0, 3);
+    }
+
+    function renderSuggestions() {
+      const box = document.getElementById('quickSuggestions');
+      if (!box) return;
+      box.innerHTML = '';
+      const sugs = getSuggestions();
+      if (!sugs.length) return;
+
+      const hdr = document.createElement('p');
+      hdr.className = 'text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-2';
+      hdr.textContent = 'Suggestions rapides';
+      box.appendChild(hdr);
+
+      sugs.forEach((s, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sugg-card' + (i === 0 ? ' primary-sugg' : '');
+        btn.innerHTML = `
+          <div>
+            <div style="font-weight:600;font-size:0.875rem;color:var(--stone);display:flex;align-items:center;gap:8px;">
+              ${s.label}
+              ${s.badge ? `<span style="font-size:0.6rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:9999px;background:rgba(44,37,32,0.1);color:var(--stone-mid);">${s.badge}</span>` : ''}
+            </div>
+            <div style="font-size:0.75rem;color:var(--stone-light);margin-top:2px;font-weight:400;">${s.sub}</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--stone-mid)" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        `;
+        btn.onclick = () => { state.date = s.date; state.service = s.service; state.time = s.time; goStep(4); };
+        box.appendChild(btn);
       });
     }
 
-    // 3. Prochain Vendredi ou Samedi
-    for (let i = 1; i <= 6; i++) {
-      const nextD = new Date(now);
-      nextD.setDate(now.getDate() + i);
-      const dow = nextD.getDay();
-      if (dow === 5 || dow === 6) {
-        if (nextD.toDateString() !== tomorrow.toDateString() || isClosedDay(tomorrow)) {
-          list.push({
-            icon: '✨',
-            label: dow === 5 ? "Ce vendredi soir" : "Ce samedi soir",
-            sublabel: "Ambiance gourmande",
-            time: '19:30',
-            service: 'soir',
-            date: nextD,
-            badge: 'Week-end'
-          });
-          break;
+    function buildGuestGrid() {
+      const grid = document.getElementById('guestGrid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 8; i++) {
+        const b = document.createElement('button');
+        b.className = 'num-tile';
+        b.textContent = i;
+        b.onclick = () => {
+          state.guests = i;
+          document.querySelectorAll('#guestGrid .num-tile').forEach(t => t.classList.remove('selected'));
+          b.classList.add('selected');
+          setTimeout(() => { initCalendar(); goStep(2); }, 160);
+        };
+        grid.appendChild(b);
+      }
+      const bPlus = document.createElement('button');
+      bPlus.className = 'num-tile col-span-4';
+      bPlus.textContent = '8+ personnes';
+      bPlus.onclick = () => document.getElementById('modal8plus').classList.add('open');
+      grid.appendChild(bPlus);
+    }
+
+    function initCalendar() {
+      const t = new Date();
+      calYear = t.getFullYear();
+      calMonth = t.getMonth();
+      renderCalendar();
+    }
+    function shiftMonth(d) {
+      calMonth += d;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      renderCalendar();
+    }
+    function renderCalendar() {
+      document.getElementById('calTitle').textContent = MONTHS[calMonth] + ' ' + calYear;
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+      const today = new Date(); today.setHours(0,0,0,0);
+      const first = new Date(calYear, calMonth, 1);
+      let dow = first.getDay() - 1; if (dow < 0) dow = 6;
+      for (let i = 0; i < dow; i++) grid.appendChild(document.createElement('div'));
+      const days = new Date(calYear, calMonth + 1, 0).getDate();
+      for (let d = 1; d <= days; d++) {
+        const date = new Date(calYear, calMonth, d);
+        const cell = document.createElement('button');
+        cell.className = 'day-cell';
+        cell.textContent = d;
+        const isPast = date < today;
+        const isClosed = date.getDay() === 0 || date.getDay() === 1;
+        if (isPast || isClosed) { cell.classList.add(isPast ? 'past' : 'disabled'); cell.disabled = true; }
+        else {
+          if (date.getTime() === today.getTime()) cell.classList.add('today');
+          if (state.date && date.toDateString() === state.date.toDateString()) cell.classList.add('selected');
+          cell.onclick = () => {
+            state.date = date;
+            document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('selected'));
+            cell.classList.add('selected');
+            setTimeout(() => { selectService(state.service || 'soir'); goStep(3); }, 160);
+          };
         }
+        grid.appendChild(cell);
       }
     }
 
-    // Si fermé aujourd'hui (dimanche ou lundi)
-    if (list.length === 0 || isClosedDay(now)) {
-      for (let i = 1; i <= 3; i++) {
-        const nextD = new Date(now);
-        nextD.setDate(now.getDate() + i);
-        if (!isClosedDay(nextD)) {
-          list.unshift({
-            icon: '📅',
-            label: "Prochain service : Mardi",
-            sublabel: "Réouverture du bistrot",
-            time: '19:30',
-            service: 'soir',
-            date: nextD,
-            badge: 'Prochaine ouverture'
-          });
-          break;
-        }
-      }
+    function selectService(s) {
+      state.service = s;
+      document.getElementById('tabMidi').classList.toggle('selected', s === 'midi');
+      document.getElementById('tabSoir').classList.toggle('selected', s === 'soir');
+      const info = document.getElementById('timeSlotInfo');
+      info.textContent = s === 'midi' ? 'Service du Midi · 11h45 – 13h00' : 'Service du Soir · 18h30 – 20h30';
+      const box = document.getElementById('timeChips');
+      box.innerHTML = '';
+      SLOTS[s].forEach(slot => {
+        const c = document.createElement('button');
+        c.className = 'chip' + (state.time === slot ? ' selected' : '');
+        c.textContent = slot;
+        c.onclick = () => {
+          state.time = slot;
+          document.querySelectorAll('#timeChips .chip').forEach(ch => ch.classList.remove('selected'));
+          c.classList.add('selected');
+          setTimeout(() => goStep(4), 160);
+        };
+        box.appendChild(c);
+      });
     }
 
-    return list.slice(0, 3);
-  }
-
-  function renderSuggestions() {
-    const box = document.getElementById('quickSuggestions');
-    if (!box) return;
-    box.innerHTML = '';
-
-    const suggestions = getSuggestions();
-    if (suggestions.length === 0) return;
-
-    const header = document.createElement('div');
-    header.className = 'flex items-center justify-between mb-2';
-    header.innerHTML = `
-      <span class="text-[11px] font-bold uppercase tracking-wider text-amber-900">⚡ Suggestions en 1 clic</span>
-      <span class="text-[10px] text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">Date & heure auto</span>
-    `;
-    box.appendChild(header);
-
-    const list = document.createElement('div');
-    list.className = 'space-y-2';
-
-    suggestions.forEach((sug, idx) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'sugg-card' + (idx === 0 ? ' primary-sugg' : '');
-      btn.innerHTML = `
-        <div class="flex items-center gap-3">
-          <span class="text-xl leading-none">${sug.icon}</span>
-          <div>
-            <div class="font-bold text-sm text-zinc-900 flex items-center gap-2">
-              <span>${sug.label}</span>
-              ${sug.badge ? `<span class="bg-amber-100 text-amber-900 text-[10px] font-semibold px-2 py-0.5 rounded-full">${sug.badge}</span>` : ''}
-            </div>
-            <div class="text-xs text-zinc-500 mt-0.5"><strong>${sug.time}</strong> · ${sug.sublabel}</div>
+    function renderSummary() {
+      const box = document.getElementById('summaryBox');
+      if (!state.date) return;
+      const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+      const cap = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+      box.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="line-height:1.6;">
+            <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--stone-light);">Votre réservation</span><br/>
+            <span style="font-weight:600;color:var(--stone);">${cap}</span> à <span style="font-weight:600;color:var(--stone);">${state.time}</span>
+            <span style="color:var(--stone-mid);">&nbsp;·&nbsp;${state.service === 'midi' ? 'Midi' : 'Soir'}</span><br/>
+            <span style="color:var(--stone-mid);">${state.guests} personne${state.guests > 1 ? 's' : ''}</span>
           </div>
-        </div>
-        <div class="text-xs font-bold text-amber-900 flex items-center gap-1">
-          <span>Choisir</span>
-          <span class="text-sm">›</span>
+          <button type="button" onclick="selectService(state.service||'soir');goStep(3);" style="background:none;border:none;cursor:pointer;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--accent);text-decoration:underline;white-space:nowrap;">Modifier</button>
         </div>
       `;
-      btn.onclick = () => {
-        state.date = sug.date;
-        state.service = sug.service;
-        state.time = sug.time;
-        goStep(4);
+    }
+
+    function validatePhone(v) {
+      const clean = v.replace(/[\s\-\.\(\)]/g, '');
+      return /^(\+\d{7,15}|00\d{7,15}|0\d{8,11})$/.test(clean);
+    }
+    function validateEmail(v) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+    }
+    function setFieldState(inputId, errId, valid, msg) {
+      const input = document.getElementById(inputId);
+      const err = document.getElementById(errId);
+      if (valid) {
+        input.classList.remove('error'); input.classList.add('valid');
+        if (err) err.classList.remove('show');
+      } else {
+        input.classList.remove('valid'); input.classList.add('error');
+        if (err && msg) { err.textContent = msg; err.classList.add('show'); }
+      }
+    }
+
+    async function submitReservation() {
+      const name = document.getElementById('fName').value.trim();
+      const phone = document.getElementById('fPhone').value.trim();
+      const email = document.getElementById('fEmail').value.trim();
+      const notes = document.getElementById('fNotes').value.trim();
+      const btn = document.getElementById('btnSubmit');
+      const err = document.getElementById('submitError');
+      err.classList.add('hidden');
+
+      let ok = true;
+      if (!name || name.length < 2) {
+        setFieldState('fName','errName', false, 'Veuillez indiquer votre prénom et nom.');
+        ok = false;
+      } else setFieldState('fName','errName', true);
+
+      const hasPhone = phone.length > 0;
+      const hasEmail = email.length > 0;
+
+      if (!hasPhone && !hasEmail) {
+        setFieldState('fPhone','errPhone', false, 'Veuillez fournir votre téléphone ou votre e-mail.');
+        setFieldState('fEmail','errEmail', false, 'Au moins un moyen de contact est requis.');
+        ok = false;
+      } else {
+        if (hasPhone && !validatePhone(phone)) {
+          setFieldState('fPhone','errPhone', false, 'Format invalide. Ex : +41 79 123 45 67');
+          ok = false;
+        } else if (hasPhone) setFieldState('fPhone','errPhone', true);
+        else { document.getElementById('fPhone').classList.remove('error','valid'); document.getElementById('errPhone').classList.remove('show'); }
+
+        if (hasEmail && !validateEmail(email)) {
+          setFieldState('fEmail','errEmail', false, 'Adresse e-mail invalide.');
+          ok = false;
+        } else if (hasEmail) setFieldState('fEmail','errEmail', true);
+        else { document.getElementById('fEmail').classList.remove('error','valid'); document.getElementById('errEmail').classList.remove('show'); }
+      }
+
+      if (!ok) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Enregistrement…';
+
+      const payload = {
+        customer_name: name,
+        customer_phone: phone || null,
+        customer_email: email || null,
+        guests_count: state.guests,
+        reservation_date: state.date.toISOString().split('T')[0],
+        service_type: state.service,
+        reservation_time: state.time,
+        notes: notes || null,
+        status: 'pending'
       };
-      list.appendChild(btn);
-    });
 
-    box.appendChild(list);
-  }
-
-  function updateDots() {
-    for (let i = 1; i <= 5; i++) {
-      const dot = document.getElementById('dot-' + i);
-      dot.classList.remove('active','done');
-      if (i < currentStep) dot.classList.add('done');
-      else if (i === currentStep) dot.classList.add('active');
-    }
-    document.getElementById('progressDots').style.display = currentStep === 5 ? 'none' : 'flex';
-  }
-
-  // ────────────────────────────────────────────────────────────
-  //  STEP 1 — Guest count
-  // ────────────────────────────────────────────────────────────
-  function buildGuestGrid() {
-    const grid = document.getElementById('guestGrid');
-    grid.innerHTML = '';
-    for (let i = 1; i <= 8; i++) {
-      const tile = document.createElement('button');
-      tile.className = 'num-tile';
-      tile.textContent = i;
-      tile.onclick = () => selectGuests(i, tile);
-      grid.appendChild(tile);
-    }
-    const plus = document.createElement('button');
-    plus.className = 'num-tile special col-span-4';
-    plus.textContent = '8+ personnes';
-    plus.onclick = () => document.getElementById('modal8plus').classList.add('open');
-    grid.appendChild(plus);
-  }
-
-  function selectGuests(n, tile) {
-    state.guests = n;
-    document.querySelectorAll('#guestGrid .num-tile').forEach(t => t.classList.remove('selected'));
-    tile.classList.add('selected');
-    setTimeout(() => {
-      initCalendar();
-      goStep(2);
-    }, 220);
-  }
-
-  function closeModal() {
-    document.getElementById('modal8plus').classList.remove('open');
-  }
-
-  // ────────────────────────────────────────────────────────────
-  //  STEP 2 — Calendar
-  // ────────────────────────────────────────────────────────────
-  function initCalendar() {
-    const today = new Date();
-    calYear  = today.getFullYear();
-    calMonth = today.getMonth();
-    renderCalendar();
-  }
-
-  function shiftMonth(delta) {
-    calMonth += delta;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    if (calMonth < 0)  { calMonth = 11; calYear--; }
-    renderCalendar();
-  }
-
-  function renderCalendar() {
-    const title = document.getElementById('calTitle');
-    title.textContent = MONTHS_FR[calMonth] + ' ' + calYear;
-
-    const grid = document.getElementById('calGrid');
-    grid.innerHTML = '';
-
-    const today = new Date();
-    today.setHours(0,0,0,0);
-
-    // First weekday of month (Mon=0)
-    const first = new Date(calYear, calMonth, 1);
-    let startDow = first.getDay() - 1; // Mon=0
-    if (startDow < 0) startDow = 6;
-
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-
-    // Blank cells
-    for (let i = 0; i < startDow; i++) {
-      const blank = document.createElement('div');
-      grid.appendChild(blank);
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(calYear, calMonth, d);
-      const dow = date.getDay(); // 0=Sun, 1=Mon
-      const cell = document.createElement('button');
-      cell.className = 'day-cell';
-      cell.innerHTML = `<span>${d}</span>`;
-
-      const isPast     = date < today;
-      const isClosed   = dow === 0 || dow === 1; // Sun or Mon
-      const isToday    = date.getTime() === today.getTime();
-      const isSelected = state.date && date.toDateString() === state.date.toDateString();
-
-      if (isPast || isClosed) {
-        cell.classList.add(isPast ? 'past' : 'disabled');
-        cell.disabled = true;
-      } else {
-        if (isToday)    cell.classList.add('today');
-        if (isSelected) cell.classList.add('selected');
-        cell.onclick = () => selectDate(date, cell);
+      try {
+        if (sbClient) {
+          const { error } = await sbClient.from('reservations').insert([payload]);
+          if (error) throw error;
+        } else {
+          await new Promise(r => setTimeout(r, 600));
+        }
+        const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+        document.getElementById('confirmSummary').innerHTML = `
+          ${name}&nbsp;·&nbsp;${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} à ${state.time}<br/>
+          ${state.service === 'midi' ? 'Midi' : 'Soir'}&nbsp;·&nbsp;${state.guests} personne${state.guests>1?'s':''}
+        `;
+        goStep(5);
+      } catch(e) {
+        console.error(e);
+        err.textContent = 'Erreur lors de la réservation. Veuillez réessayer ou appeler le 021 943 10 37.';
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmer la réservation';
       }
-      grid.appendChild(cell);
     }
 
-    // Prev button disable if current month
-    const now = new Date();
-    document.getElementById('calPrev').disabled =
-      calYear === now.getFullYear() && calMonth === now.getMonth();
-  }
-
-  function selectDate(date, cell) {
-    state.date = date;
-    document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('selected'));
-    cell.classList.add('selected');
-    setTimeout(() => goStep(3), 180);
-  }
-
-  // ────────────────────────────────────────────────────────────
-  //  STEP 3 — Service & Time
-  // ────────────────────────────────────────────────────────────
-  function selectService(svc) {
-    state.service = svc;
-    state.time = null;
-    document.getElementById('tabMidi').classList.toggle('selected', svc === 'midi');
-    document.getElementById('tabSoir').classList.toggle('selected', svc === 'soir');
-    renderTimeChips(svc);
-  }
-
-  function renderTimeChips(svc) {
-    const container = document.getElementById('timeChips');
-    container.innerHTML = '';
-    SLOTS[svc].forEach(slot => {
-      const chip = document.createElement('button');
-      chip.className = 'chip' + (state.time === slot ? ' selected' : '');
-      chip.textContent = slot;
-      chip.onclick = () => selectTime(slot);
-      container.appendChild(chip);
+    document.addEventListener('DOMContentLoaded', () => {
+      buildGuestGrid();
+      goStep(1);
     });
-  }
-
-  function selectTime(slot) {
-    state.time = slot;
-    document.querySelectorAll('#timeChips .chip').forEach(c => {
-      c.classList.toggle('selected', c.textContent === slot);
-    });
-    setTimeout(() => goStep(4), 220);
-  }
-
-  // ────────────────────────────────────────────────────────────
-  //  STEP 4 — Summary pill
-  // ────────────────────────────────────────────────────────────
-  function renderSummary() {
-    const pill = document.getElementById('summaryPill');
-    if (!state.date || !state.guests || !state.service || !state.time) { pill.innerHTML = ''; return; }
-    const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
-    const svcStr  = state.service === 'midi' ? 'Midi 🌞' : 'Soir 🌙';
-    pill.innerHTML = `
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="flex flex-wrap gap-x-4 gap-y-1">
-          <span>📅 <strong>${capitalize(dateStr)}</strong></span>
-          <span>🕐 <strong>${state.time}</strong> · ${svcStr}</span>
-          <span>👥 <strong>${state.guests} personne${state.guests > 1 ? 's' : ''}</strong></span>
-        </div>
-        <button type="button" onclick="goStep(3)" class="text-[11px] font-bold text-amber-900 underline hover:text-amber-700">Modifier l'horaire</button>
-      </div>`;
-  }
-
-  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-  // ────────────────────────────────────────────────────────────
-  //  SUBMIT
-  // ────────────────────────────────────────────────────────────
-  async function submitReservation() {
-    const name  = document.getElementById('fName').value.trim();
-    const phone = document.getElementById('fPhone').value.trim();
-    const email = document.getElementById('fEmail').value.trim();
-    const notes = document.getElementById('fNotes').value.trim();
-    const btn   = document.getElementById('btnSubmit');
-    const errEl = document.getElementById('submitError');
-
-    // Validation
-    const nameEl  = document.getElementById('fName');
-    const phoneEl = document.getElementById('fPhone');
-    let valid = true;
-
-    [nameEl, phoneEl].forEach(el => el.classList.remove('error'));
-    errEl.classList.add('hidden');
-
-    if (!name)  { nameEl.classList.add('error');  valid = false; }
-    if (!phone) { phoneEl.classList.add('error'); valid = false; }
-    if (!valid) { errEl.textContent = 'Veuillez remplir les champs obligatoires.'; errEl.classList.remove('hidden'); return; }
-
-    btn.disabled = true;
-    btn.innerHTML = `<svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" opacity=".3"/><path d="M21 12c0-4.97-4.03-9-9-9"/></svg> Envoi…`;
-
-    const payload = {
-      customer_name:    name,
-      customer_phone:   phone,
-      customer_email:   email || null,
-      guests_count:     state.guests,
-      reservation_date: state.date.toISOString().split('T')[0],
-      service_type:     state.service,
-      reservation_time: state.time,
-      notes:            notes || null,
-      status:           'pending',
-    };
-
-    try {
-      if (sbClient) {
-        const { error } = await sbClient.from('reservations').insert([payload]);
-        if (error) throw error;
-      } else {
-        // Mode démo sans Supabase
-        await new Promise(r => setTimeout(r, 900));
-        console.info('📋 Réservation (mode démo):', payload);
-      }
-
-      // Success screen
-      const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
-      document.getElementById('confirmDetail').textContent =
-        `${capitalize(dateStr)} · ${state.time} · ${state.guests} pers.`;
-      goStep(5);
-    } catch(err) {
-      console.error(err);
-      errEl.textContent = 'Une erreur est survenue. Veuillez réessayer ou nous appeler.';
-      errEl.classList.remove('hidden');
-      btn.disabled = false;
-      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Confirmer la réservation`;
-    }
-  }
-
-  // ────────────────────────────────────────────────────────────
-  //  RESET
-  // ────────────────────────────────────────────────────────────
-  function resetWizard() {
-    state.guests = null; state.date = null; state.service = null; state.time = null;
-    ['fName','fPhone','fEmail','fNotes'].forEach(id => document.getElementById(id).value = '');
-    buildGuestGrid();
-    goStep(1);
-  }
-
-  // ────────────────────────────────────────────────────────────
-  //  INIT
-  // ────────────────────────────────────────────────────────────
-  buildGuestGrid();
-  updateDots();
   </script>
 </body>
 </html>
