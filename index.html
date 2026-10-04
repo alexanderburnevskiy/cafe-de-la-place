@@ -39,9 +39,10 @@
 
     /* ── NAV ── */
     .nav-link {
-      font-size: 0.8rem; font-weight: 500; letter-spacing: 0.08em;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.07em;
       text-transform: uppercase; color: var(--stone-mid);
-      transition: color 0.2s ease; text-decoration: none;
+      transition: color 0.2s ease, opacity 0.2s ease; text-decoration: none;
+      line-height: 1; display: inline-flex; align-items: center; height: 32px;
     }
     .nav-link:hover { color: var(--stone); }
 
@@ -227,17 +228,20 @@
 <body>
 
   <!-- ════ NAV ════ -->
-  <header class="sticky top-0 z-50 bg-[var(--white)]/90 backdrop-blur-md border-b border-[rgba(92,79,68,0.12)]">
+  <header class="sticky top-0 z-50 bg-[var(--white)]/95 backdrop-blur-md border-b border-[rgba(92,79,68,0.12)]">
     <div class="max-w-7xl mx-auto px-6 sm:px-10 h-16 flex items-center justify-between">
-      <a href="#" class="flex items-center gap-3 no-underline">
-        <img src="assets/logo.png" alt="Café de la Place" class="h-9 w-auto object-contain" />
-        <span class="serif text-xl tracking-tight text-[var(--stone)]">Café de la Place</span>
+      <a href="#" class="inline-flex items-center gap-3 no-underline group h-8">
+        <img src="assets/logo.png" alt="Café de la Place" class="h-7 w-auto object-contain transition-opacity group-hover:opacity-80" style="filter: brightness(0); opacity: 0.88; display: block;" />
+        <span class="serif text-xl tracking-tight text-[var(--stone)] leading-none inline-flex items-center h-full pt-[2px]">Café de la Place</span>
       </a>
-      <nav class="hidden md:flex items-center gap-10">
+      <nav class="hidden md:flex items-center gap-9">
         <a href="#spirit" class="nav-link">L'Esprit</a>
         <a href="#menu" class="nav-link">La Carte</a>
         <a href="#horaires" class="nav-link">Horaires</a>
-        <a href="admin.html" class="nav-link opacity-50">Staff</a>
+        <a href="admin.html" class="nav-link opacity-60 hover:opacity-100 flex items-center gap-1.5" title="Accès espace personnel">
+          <span>Staff</span>
+          <span class="text-[10px]">🔒</span>
+        </a>
       </nav>
       <button onclick="openBooking()" class="btn-primary text-xs py-2.5 px-5">
         Réserver
@@ -305,10 +309,10 @@
       <!-- Real photo grid -->
       <div class="photo-grid h-[420px] sm:h-[520px] rounded-2xl overflow-hidden shadow-sm">
         <div class="tall overflow-hidden">
-          <img src="assets/salle.jpg" alt="Salle du restaurant" class="w-full h-full object-cover" />
+          <img src="assets/img_0386.jpg" alt="Marisa et l'accueil au Café de la Place" class="w-full h-full object-cover object-[center_20%]" />
         </div>
         <div class="overflow-hidden">
-          <img src="assets/plat.jpg" alt="Plat signature" class="w-full h-full object-cover" />
+          <img src="assets/img_0066.jpg" alt="Création bistronomique et dressage minute" class="w-full h-full object-cover" />
         </div>
         <div class="overflow-hidden">
           <img src="assets/img_0110.jpg" alt="Dessert maison aux framboises fraîches" class="w-full h-full object-cover" />
@@ -373,10 +377,14 @@
     </div>
   </section>
 
-  <!-- ════ FULL-WIDTH PHOTO BAND ════ -->
-  <section class="h-[40vmin] max-h-[380px] overflow-hidden relative">
-    <img src="assets/bistrot.jpg" alt="Café de la Place Saint-Légier" class="w-full h-full object-cover" />
-    <div class="absolute inset-0 bg-black/20"></div>
+  <!-- ════ FULL-WIDTH ATMOSPHERIC BAND ════ -->
+  <section class="h-[38vmin] max-h-[340px] overflow-hidden relative">
+    <img src="assets/salle.jpg" alt="Ambiance chaleureuse du Café de la Place" class="w-full h-full object-cover object-[center_35%]" />
+    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+      <p class="serif text-white text-xl sm:text-2xl md:text-3xl text-center px-6 drop-shadow-md font-light italic max-w-2xl leading-relaxed">
+        « Une table d'exception, entre terroir vaudois et créativité. »
+      </p>
+    </div>
   </section>
 
   <!-- ════ HORAIRES & CONTACT ════ -->

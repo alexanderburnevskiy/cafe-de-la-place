@@ -158,7 +158,7 @@
         <button class="cdp-close-btn" id="cdpClose">×</button>
 
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <img src="assets/logo.png" alt="Café de la Place" style="height:28px;width:auto;object-fit:contain;" />
+          <img src="assets/logo.png" alt="Café de la Place" style="height:28px;width:auto;object-fit:contain;filter:brightness(0);opacity:0.88;" />
           <span class="cdp-serif" style="font-size:1.15rem;color:#2c2520;">Café de la Place</span>
         </div>
 
