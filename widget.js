@@ -515,9 +515,16 @@
   }
 
   // Validation
+  function toLocalISO(d) {
+    if (!d) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
   function validatePhone(v) {
     const clean = v.replace(/[\s\-\.\(\)]/g, '');
-    return /^(\+41|0041|0)[1-9][0-9]{7,13}$/.test(clean);
+    return /^(0[1-9][0-9]{8}|(\+|00)[1-9][0-9]{7,14})$/.test(clean);
   }
   function validateEmail(v) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -554,7 +561,7 @@
       if (hasPhone && !validatePhone(phone)) {
         document.getElementById('cdpPhone').classList.add('error');
         document.getElementById('cdpErrPhone').classList.add('show');
-        document.getElementById('cdpErrPhone').textContent = 'Format suisse valide (+41 / 07x / 02x).';
+        document.getElementById('cdpErrPhone').textContent = 'Numéro invalide (+41 / 07x / inter).';
         ok = false;
       } else {
         document.getElementById('cdpPhone').classList.remove('error');
@@ -584,7 +591,7 @@
       customer_phone: phone || null,
       customer_email: email || null,
       guests_count: state.guests,
-      reservation_date: state.date.toISOString().split('T')[0],
+      reservation_date: toLocalISO(state.date),
       service_type: state.service,
       reservation_time: state.time || '19:30',
       notes: fullNotes.trim() || null,

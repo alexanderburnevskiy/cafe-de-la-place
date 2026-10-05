@@ -20,7 +20,8 @@ const server = http.createServer((req, res) => {
   if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
   else if (reqPath === '/admin') reqPath = '/admin.html';
   else if (reqPath === '/widget') reqPath = '/client-widget.html';
-  else if (reqPath === '/dashboard') reqPath = '/staff-dashboard.html';
+  else if (reqPath === '/dashboard') reqPath = '/admin.html';
+  else if (reqPath === '/favicon.ico') reqPath = '/assets/logo.png';
 
   let filePath = path.join(__dirname, reqPath);
   if (!path.extname(filePath) && fs.existsSync(filePath + '.html')) {
@@ -41,9 +42,11 @@ const server = http.createServer((req, res) => {
       return;
     }
 
+    const isAsset = ['.jpg', '.png', '.svg', '.woff2'].includes(ext);
     res.writeHead(200, {
       'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
-      'Access-Control-Allow-Origin': '*'
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': isAsset ? 'public, max-age=86400' : 'no-cache'
     });
     res.end(content);
   });

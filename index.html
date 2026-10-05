@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Café de la Place — Saint-Légier</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
   <meta name="description" content="Café de la Place à Saint-Légier-La Chiésaz. Bistronomie vaudoise, terrasse ombragée sous les marronniers, cuisine de saison et accueil chaleureux." />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -573,7 +574,7 @@
         <div class="space-y-4">
           <!-- Nom -->
           <div>
-            <label class="field-label">Nom et prénom *</label>
+            <label class="field-label" for="fName">Nom et prénom *</label>
             <div class="field-wrap">
               <input class="field-input" id="fName" type="text" placeholder="Alexandre Burnevskiy" autocomplete="name" />
             </div>
@@ -582,7 +583,7 @@
 
           <!-- Téléphone -->
           <div>
-            <label class="field-label">Téléphone <span id="phoneSuffix" class="font-light normal-case tracking-normal">(requis si pas d'e-mail)</span></label>
+            <label class="field-label" for="fPhone">Téléphone <span id="phoneSuffix" class="font-light normal-case tracking-normal">(requis si pas d'e-mail)</span></label>
             <div class="field-wrap">
               <input class="field-input" id="fPhone" type="tel" placeholder="+41 79 123 45 67" autocomplete="tel" />
             </div>
@@ -591,7 +592,7 @@
 
           <!-- Email -->
           <div>
-            <label class="field-label">E-mail <span id="emailSuffix" class="font-light normal-case tracking-normal">(requis si pas de téléphone)</span></label>
+            <label class="field-label" for="fEmail">E-mail <span id="emailSuffix" class="font-light normal-case tracking-normal">(requis si pas de téléphone)</span></label>
             <div class="field-wrap">
               <input class="field-input" id="fEmail" type="email" placeholder="alexandre@example.ch" autocomplete="email" />
             </div>
@@ -600,7 +601,7 @@
 
           <!-- Remarques -->
           <div>
-            <label class="field-label" style="text-transform:uppercase;letter-spacing:0.04em;">Remarques <span class="font-light normal-case tracking-normal">(optionnel)</span></label>
+            <label class="field-label" for="fNotes" style="text-transform:uppercase;letter-spacing:0.04em;">Remarques <span class="font-light normal-case tracking-normal">(optionnel)</span></label>
             <input class="field-input" id="fNotes" type="text" placeholder="Allergie aux fruits de mer, chaise haute..." />
           </div>
         </div>
@@ -898,11 +899,20 @@
       `;
     }
 
+    // ── LOCAL DATE FORMATTER (Timezone safe) ──
+    function toLocalISO(d) {
+      if (!d) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
     // ── VALIDATION HELPERS ──
     function validatePhone(v) {
-      // Allow Swiss / international formats: +41..., 0041..., 07x..., 02x...
       const clean = v.replace(/[\s\-\.\(\)]/g, '');
-      return /^(\+41|0041|0)[1-9][0-9]{7,13}$/.test(clean);
+      // Swiss national (0xx xxx xx xx) or international format (+... or 00...)
+      return /^(0[1-9][0-9]{8}|(\+|00)[1-9][0-9]{7,14})$/.test(clean);
     }
     function validateEmail(v) {
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -947,7 +957,7 @@
         ok = false;
       } else {
         if (hasPhone && !validatePhone(phone)) {
-          setFieldState('fPhone','errPhone', false, 'Format suisse/inter valide (+41 / 07x / 02x). Ex : +41 79 123 45 67');
+          setFieldState('fPhone','errPhone', false, 'Numéro invalide (+41 / 07x / inter). Ex : +41 79 123 45 67');
           ok = false;
         } else if (hasPhone) { setFieldState('fPhone','errPhone', true); }
         else { document.getElementById('fPhone').classList.remove('error','valid'); document.getElementById('errPhone').classList.remove('show'); }
@@ -973,7 +983,7 @@
         customer_phone: phone || null,
         customer_email: email || null,
         guests_count: state.guests,
-        reservation_date: state.date.toISOString().split('T')[0],
+        reservation_date: toLocalISO(state.date),
         service_type: state.service,
         reservation_time: state.time || '19:30',
         notes: fullNotes.trim() || null,
