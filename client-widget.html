@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Réservation — Café de la Place</title>
   <link rel="icon" type="image/png" href="assets/logo.png" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- OpenGraph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Réservation — Café de la Place" />
+  <meta property="og:description" content="Réservez votre table au Café de la Place à Saint-Légier. Terrasse ombragée et bistronomie vaudoise." />
+  <meta property="og:image" content="https://www.cafedelaplace.ch/assets/img_1701.jpg" />
+  <link rel="stylesheet" href="assets/style.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -163,7 +168,12 @@
       <img src="assets/logo.png" alt="Café de la Place" class="h-9 w-auto object-contain" style="filter: brightness(0); opacity: 0.88;" />
       <h1 class="serif text-3xl sm:text-4xl text-[var(--stone)]">Café de la Place</h1>
     </div>
-    <p class="text-xs text-[var(--stone-mid)] font-light">Saint-Légier · Réservation en ligne</p>
+    <div class="flex items-center justify-center gap-3">
+      <p class="text-xs text-[var(--stone-mid)] font-light" data-fr="Saint-Légier · Réservation en ligne" data-en="Saint-Légier · Online booking">Saint-Légier · Réservation en ligne</p>
+      <button id="langToggle" onclick="toggleLang()" style="font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--stone-light);background:none;border:1px solid rgba(92,79,68,0.2);padding:2px 8px;border-radius:9999px;cursor:pointer;transition:all 0.18s;" onmouseover="this.style.borderColor='var(--stone)';this.style.color='var(--stone)'" onmouseout="this.style.borderColor='rgba(92,79,68,0.2)';this.style.color='var(--stone-light)'">
+        <span id="langLabel">EN</span>
+      </button>
+    </div>
   </header>
 
   <!-- Wizard Card -->
@@ -316,12 +326,21 @@
           </div>
         </div>
 
-        <h3 class="serif text-3xl text-[var(--stone)] mb-2">Table réservée !</h3>
+        <h3 class="serif text-3xl text-[var(--stone)] mb-2" data-fr="Table réservée !" data-en="Table booked!">Table réservée !</h3>
         <p class="text-[var(--stone-mid)] text-sm font-light mb-5 max-w-xs mx-auto">
-          Votre réservation est bien enregistrée au <strong class="font-semibold text-[var(--stone)]">Café de la Place</strong>.
+          <span data-fr="Votre réservation est bien enregistrée au" data-en="Your table is confirmed at">Votre réservation est bien enregistrée au</span> <strong class="font-semibold text-[var(--stone)]">Café de la Place</strong>.
         </p>
-        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-6 font-light leading-relaxed" style="background:var(--cream);"></div>
-        <button onclick="location.reload()" class="btn-primary px-8">Nouvelle réservation</button>
+        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-5 font-light leading-relaxed text-left" style="background:var(--cream);"></div>
+
+        <div class="flex flex-col gap-2.5 items-center">
+          <a id="whatsappBtn" href="#" target="_blank" rel="noopener" onclick="return openWhatsApp()"
+            style="display:inline-flex;align-items:center;gap:8px;padding:0.7rem 1.5rem;background:#25D366;color:#fff;border-radius:9999px;font-size:0.8rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;text-decoration:none;transition:all 0.2s;"
+            onmouseover="this.style.background='#1ebe5d'" onmouseout="this.style.background='#25D366'">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <span data-fr="Partager sur WhatsApp" data-en="Share on WhatsApp">Partager sur WhatsApp</span>
+          </a>
+          <button onclick="location.reload()" class="btn-ghost-sm" data-fr="Nouvelle réservation" data-en="New booking">Nouvelle réservation</button>
+        </div>
       </div>
 
     </div>
@@ -677,7 +696,46 @@
     document.addEventListener('DOMContentLoaded', () => {
       buildGuestGrid();
       goStep(1);
+      if (_currentLang === 'en') applyLang('en');
     });
+
+    // ── WHATSAPP SHARE ──
+    function openWhatsApp() {
+      if (!state.date) return false;
+      const lang = localStorage.getItem('cdp_lang') || 'fr';
+      const dateStr = state.date.toLocaleDateString(lang === 'en' ? 'en-GB' : 'fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+      const zoneStr = state.zone === 'terrasse'
+        ? (lang === 'en' ? '🌿 Shaded terrace' : '🌿 Terrasse ombragée')
+        : (lang === 'en' ? '🍷 Indoor (dining room)' : '🍷 Intérieur (Salle)');
+      let text;
+      if (lang === 'en') {
+        text = `✅ *Café de la Place — Reservation confirmed*\n\n📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} at ${state.time || '19:30'} (${state.service === 'midi' ? 'Lunch' : 'Dinner'})\n👥 ${state.guests} guest${state.guests > 1 ? 's' : ''} · ${zoneStr}\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\n\n_See you soon at Café de la Place!_`;
+      } else {
+        text = `✅ *Café de la Place — Réservation confirmée*\n\n📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} à ${state.time || '19:30'} (${state.service === 'midi' ? 'Midi' : 'Soir'})\n👥 ${state.guests} personne${state.guests > 1 ? 's' : ''} · ${zoneStr}\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\n\n_À très bientôt au Café de la Place !_`;
+      }
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      return false;
+    }
+
+    // ── BILINGUAL i18n ENGINE ──
+    let _currentLang = localStorage.getItem('cdp_lang') || 'fr';
+
+    function applyLang(lang) {
+      _currentLang = lang;
+      localStorage.setItem('cdp_lang', lang);
+      document.documentElement.lang = lang === 'en' ? 'en' : 'fr';
+      const lbl = document.getElementById('langLabel');
+      if (lbl) lbl.textContent = lang === 'en' ? 'FR' : 'EN';
+      document.querySelectorAll('[data-fr]').forEach(el => {
+        const val = el.getAttribute('data-' + lang);
+        if (val === null) return;
+        if (/<[a-z]/i.test(val)) { el.innerHTML = val; } else { el.textContent = val; }
+      });
+    }
+
+    function toggleLang() {
+      applyLang(_currentLang === 'fr' ? 'en' : 'fr');
+    }
   </script>
 </body>
 </html>

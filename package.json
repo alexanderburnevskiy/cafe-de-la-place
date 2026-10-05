@@ -1,5 +1,15 @@
 {
+  "name": "cafe-de-la-place",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server.js",
+    "build:css": "npx tailwindcss -i ./input.css -o ./assets/style.min.css --minify",
+    "watch:css": "npx tailwindcss -i ./input.css -o ./assets/style.min.css --watch"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
   }
 }

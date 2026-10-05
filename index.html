@@ -6,7 +6,19 @@
   <title>Café de la Place — Saint-Légier</title>
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <meta name="description" content="Café de la Place à Saint-Légier-La Chiésaz. Bistronomie vaudoise, terrasse ombragée sous les marronniers, cuisine de saison et accueil chaleureux." />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- OpenGraph — rich preview on WhatsApp, Telegram, iMessage, Twitter -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.cafedelaplace.ch" />
+  <meta property="og:title" content="Café de la Place — Saint-Légier" />
+  <meta property="og:description" content="Bistronomie vaudoise sur la place historique de Saint-Légier. Terrasse ombragée, cuisine de saison, réservation en ligne." />
+  <meta property="og:image" content="https://www.cafedelaplace.ch/assets/img_1701.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Café de la Place — Saint-Légier" />
+  <meta name="twitter:description" content="Bistronomie vaudoise, terrasse ombragée, cuisine de saison." />
+  <meta name="twitter:image" content="https://www.cafedelaplace.ch/assets/img_1701.jpg" />
+  <link rel="stylesheet" href="assets/style.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -236,17 +248,23 @@
         <span class="serif text-xl tracking-tight text-[var(--stone)] leading-none inline-flex items-center h-full pt-[2px]">Café de la Place</span>
       </a>
       <nav class="hidden md:flex items-center gap-9">
-        <a href="#spirit" class="nav-link">L'Esprit</a>
-        <a href="#menu" class="nav-link">La Carte</a>
-        <a href="#horaires" class="nav-link">Horaires</a>
+        <a href="#spirit" class="nav-link" data-fr="L'Esprit" data-en="Our Story">L'Esprit</a>
+        <a href="#menu" class="nav-link" data-fr="La Carte" data-en="The Menu">La Carte</a>
+        <a href="#horaires" class="nav-link" data-fr="Horaires" data-en="Hours">Horaires</a>
         <a href="admin.html" class="nav-link opacity-60 hover:opacity-100 flex items-center gap-1.5" title="Accès espace personnel">
           <span>Staff</span>
           <span class="text-[10px]">🔒</span>
         </a>
       </nav>
-      <button onclick="openBooking()" class="btn-primary text-xs py-2.5 px-5">
-        Réserver
-      </button>
+      <div class="flex items-center gap-3">
+        <!-- Language Toggle -->
+        <button id="langToggle" onclick="toggleLang()" style="font-size:0.7rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--stone-light);background:none;border:1.5px solid rgba(92,79,68,0.18);padding:0.25rem 0.65rem;border-radius:9999px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:4px;" onmouseover="this.style.borderColor='var(--stone)';this.style.color='var(--stone)'" onmouseout="this.style.borderColor='rgba(92,79,68,0.18)';this.style.color='var(--stone-light)'">
+          <span id="langLabel">EN</span>
+        </button>
+        <button onclick="openBooking()" class="btn-primary text-xs py-2.5 px-5" data-fr="Réserver" data-en="Reserve">
+          Réserver
+        </button>
+      </div>
     </div>
   </header>
 
@@ -257,31 +275,31 @@
       <div>
         <p class="nav-link mb-6">Saint-Légier · Vaud · Suisse</p>
         <h1 class="serif text-[clamp(2.8rem,6vw,5.5rem)] leading-[1.05] text-[var(--stone)] mb-8">
-          Un lieu où<br/>
-          <em>l'on prend<br/>
-          le temps.</em>
+          <span data-fr="Un lieu où" data-en="A place">Un lieu où</span><br/>
+          <em><span data-fr="l'on prend<br/>le temps." data-en="to slow<br/>down.">l'on prend<br/>
+          le temps.</span></em>
         </h1>
-        <p class="text-[var(--stone-mid)] text-base font-light leading-relaxed max-w-sm mb-10">
+        <p class="text-[var(--stone-mid)] text-base font-light leading-relaxed max-w-sm mb-10" data-fr="Bistronomie vaudoise, terrasse ombragée sous les marronniers, cuisine authentique et créative. Du mardi au samedi, midi et soir." data-en="Vaudois bistronomie, a shaded terrace under the chestnut trees, authentic and creative cuisine. Tuesday to Saturday, lunch and dinner.">
           Bistronomie vaudoise, terrasse ombragée sous les marronniers, cuisine authentique et créative. Du mardi au samedi, midi et soir.
         </p>
-        <button onclick="openBooking()" class="btn-primary">
+        <button onclick="openBooking()" class="btn-primary" data-fr="Réserver une table" data-en="Book a table">
           Réserver une table
         </button>
       </div>
       <div class="mt-16 flex items-center gap-8 text-[var(--stone-mid)]">
         <div>
-          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]">Midi</p>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]" data-fr="Midi" data-en="Lunch">Midi</p>
           <p class="font-medium text-sm">11h45 – 13h00</p>
         </div>
         <div class="w-px h-8 bg-[rgba(92,79,68,0.2)]"></div>
         <div>
-          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]">Soir</p>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]" data-fr="Soir" data-en="Dinner">Soir</p>
           <p class="font-medium text-sm">18h30 – 20h30</p>
         </div>
         <div class="w-px h-8 bg-[rgba(92,79,68,0.2)]"></div>
         <div>
-          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]">Jours</p>
-          <p class="font-medium text-sm">Mar – Sam</p>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]" data-fr="Jours" data-en="Days">Jours</p>
+          <p class="font-medium text-sm" data-fr="Mar – Sam" data-en="Tue – Sat">Mar – Sam</p>
         </div>
       </div>
     </div>
@@ -296,14 +314,14 @@
   <section id="spirit" class="py-24 sm:py-32 px-6 sm:px-10 max-w-7xl mx-auto">
     <div class="grid md:grid-cols-2 gap-16 items-center">
       <div>
-        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4">Notre philosophie</p>
+        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="Notre philosophie" data-en="Our philosophy">Notre philosophie</p>
         <h2 class="serif text-[clamp(2rem,4vw,3.5rem)] leading-tight text-[var(--stone)] mb-6">
-          La cuisine<br/>comme art<br/>de recevoir.
+          <span data-fr="La cuisine" data-en="Cuisine">La cuisine</span><br/><span data-fr="comme art" data-en="as an art">comme art</span><br/><span data-fr="de recevoir." data-en="of hospitality.">de recevoir.</span>
         </h2>
-        <p class="text-[var(--stone-mid)] leading-relaxed font-light mb-4 max-w-sm">
+        <p class="text-[var(--stone-mid)] leading-relaxed font-light mb-4 max-w-sm" data-fr="Niché sur la place historique de Saint-Légier-La Chiésaz, le Café de la Place vous émerveille par sa cuisine authentique et créative ainsi que ses mets du terroir vaudois." data-en="Nestled on the historic square of Saint-Légier-La Chiésaz, Café de la Place enchants with its authentic, creative cooking and the finest produce from the Vaudois terroir.">
           Niché sur la place historique de Saint-Légier-La Chiésaz, le Café de la Place vous émerveille par sa cuisine authentique et créative ainsi que ses mets du terroir vaudois.
         </p>
-        <p class="text-[var(--stone-mid)] leading-relaxed font-light max-w-sm">
+        <p class="text-[var(--stone-mid)] leading-relaxed font-light max-w-sm" data-fr="À l'ombre des marronniers en terrasse ou dans l'ambiance chaleureuse de la salle : Marisa et son équipe se réjouissent de vous accueillir." data-en="Under the shade of the chestnut trees on the terrace or in the warm ambiance of the dining room: Marisa and her team look forward to welcoming you.">
           À l'ombre des marronniers en terrasse ou dans l'ambiance chaleureuse de la salle : Marisa et son équipe se réjouissent de vous accueillir.
         </p>
       </div>
@@ -327,11 +345,11 @@
     <div class="max-w-7xl mx-auto px-6 sm:px-10">
       <div class="grid md:grid-cols-[1fr_2fr] gap-16">
         <div>
-          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4">La Carte</p>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="La Carte" data-en="The Menu">La Carte</p>
           <h2 class="serif text-[clamp(1.8rem,3.5vw,3rem)] leading-tight text-[var(--stone)] mb-6">
-            Les<br/>Incontournables
+            <span data-fr="Les" data-en="Our">Les</span><br/><span data-fr="Incontournables" data-en="Signatures">Incontournables</span>
           </h2>
-          <p class="text-[var(--stone-mid)] text-sm font-light leading-relaxed">
+          <p class="text-[var(--stone-mid)] text-sm font-light leading-relaxed" data-fr="Spécialités de saison, agneau de Saint-Légier, poissons du Léman et accords avec les plus beaux crus des coteaux du Lavaux." data-en="Seasonal specialities, Saint-Légier lamb, Lake Geneva fish and pairings with the finest vintages from the Lavaux slopes.">
             Spécialités de saison, agneau de Saint-Légier, poissons du Léman et accords avec les plus beaux crus des coteaux du Lavaux.
           </p>
         </div>
@@ -393,27 +411,27 @@
     <div class="grid md:grid-cols-3 gap-16">
       <!-- Hours -->
       <div>
-        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4">Horaires</p>
-        <h3 class="serif text-2xl text-[var(--stone)] mb-6">Ouvert du<br/>Mardi au Samedi</h3>
+        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="Horaires" data-en="Opening Hours">Horaires</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-6" data-fr="Ouvert du<br/>Mardi au Samedi" data-en="Open<br/>Tuesday to Saturday">Ouvert du<br/>Mardi au Samedi</h3>
         <div class="space-y-3 text-sm">
           <div class="flex justify-between text-[var(--stone-mid)]">
-            <span>Dimanche & Lundi</span>
-            <span class="font-medium text-[rgba(92,79,68,0.4)]">Fermé</span>
+            <span data-fr="Dimanche & Lundi" data-en="Sunday & Monday">Dimanche & Lundi</span>
+            <span class="font-medium text-[rgba(92,79,68,0.4)]" data-fr="Fermé" data-en="Closed">Fermé</span>
           </div>
           <div class="flex justify-between text-[var(--stone-mid)]">
-            <span>Service du Midi</span>
+            <span data-fr="Service du Midi" data-en="Lunch service">Service du Midi</span>
             <span class="font-medium text-[var(--stone)]">11h45 – 13h00</span>
           </div>
           <div class="flex justify-between text-[var(--stone-mid)]">
-            <span>Service du Soir</span>
+            <span data-fr="Service du Soir" data-en="Dinner service">Service du Soir</span>
             <span class="font-medium text-[var(--stone)]">18h30 – 20h30</span>
           </div>
         </div>
       </div>
       <!-- Contact -->
       <div>
-        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4">Contact</p>
-        <h3 class="serif text-2xl text-[var(--stone)] mb-6">Nous trouver</h3>
+        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="Contact" data-en="Contact">Contact</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-6" data-fr="Nous trouver" data-en="Find us">Nous trouver</h3>
         <div class="space-y-3 text-sm text-[var(--stone-mid)]">
           <p>Place du Village<br/>1806 Saint-Légier-La Chiésaz</p>
           <p><a href="tel:0219431037" class="text-[var(--stone)] font-medium hover:text-[var(--accent)] transition-colors">021 943 10 37</a></p>
@@ -423,11 +441,11 @@
       <!-- CTA -->
       <div class="bg-[var(--cream)] rounded-2xl p-8 flex flex-col justify-between">
         <div>
-          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-3">Réservation</p>
-          <h3 class="serif text-2xl text-[var(--stone)] mb-4">Votre table vous attend.</h3>
-          <p class="text-[var(--stone-mid)] text-sm font-light leading-relaxed">Confirmation en ligne instantanée pour le midi ou le soir.</p>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-3" data-fr="Réservation" data-en="Reservation">Réservation</p>
+          <h3 class="serif text-2xl text-[var(--stone)] mb-4" data-fr="Votre table vous attend." data-en="Your table awaits.">Votre table vous attend.</h3>
+          <p class="text-[var(--stone-mid)] text-sm font-light leading-relaxed" data-fr="Confirmation en ligne instantanée pour le midi ou le soir." data-en="Instant online confirmation for lunch or dinner.">Confirmation en ligne instantanée pour le midi ou le soir.</p>
         </div>
-        <button onclick="openBooking()" class="btn-primary mt-8 w-full justify-center">
+        <button onclick="openBooking()" class="btn-primary mt-8 w-full justify-center" data-fr="Réserver maintenant" data-en="Book now">
           Réserver maintenant
         </button>
       </div>
@@ -630,12 +648,22 @@
           </div>
         </div>
 
-        <h3 class="serif text-3xl text-[var(--stone)] mb-2">Table réservée !</h3>
+        <h3 class="serif text-3xl text-[var(--stone)] mb-2" data-fr="Table réservée !" data-en="Table booked!">Table réservée !</h3>
         <p class="text-[var(--stone-mid)] text-sm font-light mb-5 max-w-xs mx-auto">
-          Votre table est bien enregistrée au <strong class="font-semibold text-[var(--stone)]">Café de la Place</strong>.
+          <span data-fr="Votre table est bien enregistrée au" data-en="Your table is confirmed at">Votre table est bien enregistrée au</span> <strong class="font-semibold text-[var(--stone)]">Café de la Place</strong>.
         </p>
-        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-6 font-light leading-relaxed" style="background:var(--cream);"></div>
-        <button onclick="closeBooking()" class="btn-primary px-8">Fermer</button>
+        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-5 font-light leading-relaxed text-left" style="background:var(--cream);"></div>
+
+        <!-- WhatsApp share + Close -->
+        <div class="flex flex-col gap-2.5 items-center">
+          <a id="whatsappBtn" href="#" target="_blank" rel="noopener" onclick="return openWhatsApp()"
+            style="display:inline-flex;align-items:center;gap:8px;padding:0.7rem 1.5rem;background:#25D366;color:#fff;border-radius:9999px;font-size:0.8rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;text-decoration:none;transition:all 0.2s;"
+            onmouseover="this.style.background='#1ebe5d'" onmouseout="this.style.background='#25D366'">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <span data-fr="Partager sur WhatsApp" data-en="Share on WhatsApp">Partager sur WhatsApp</span>
+          </a>
+          <button onclick="closeBooking()" class="btn-ghost-sm" data-fr="Fermer" data-en="Close">Fermer</button>
+        </div>
       </div>
 
     </div>
@@ -1026,6 +1054,47 @@
     document.getElementById('fName').addEventListener('blur', function() {
       if (this.value.trim().length >= 2) setFieldState('fName','errName', true);
     });
+
+    // ── WHATSAPP SHARE ──
+    function openWhatsApp() {
+      if (!state.date) return false;
+      const lang = localStorage.getItem('cdp_lang') || 'fr';
+      const dateStr = state.date.toLocaleDateString(lang === 'en' ? 'en-GB' : 'fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+      const zoneStr = state.zone === 'terrasse'
+        ? (lang === 'en' ? '🌿 Shaded terrace' : '🌿 Terrasse ombragée')
+        : (lang === 'en' ? '🍷 Indoor (dining room)' : '🍷 Intérieur (Salle)');
+      let text;
+      if (lang === 'en') {
+        text = `✅ *Café de la Place — Reservation confirmed*\n\n📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} at ${state.time || '19:30'} (${state.service === 'midi' ? 'Lunch' : 'Dinner'})\n👥 ${state.guests} guest${state.guests > 1 ? 's' : ''} · ${zoneStr}\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\n\n_See you soon at Café de la Place!_`;
+      } else {
+        text = `✅ *Café de la Place — Réservation confirmée*\n\n📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} à ${state.time || '19:30'} (${state.service === 'midi' ? 'Midi' : 'Soir'})\n👥 ${state.guests} personne${state.guests > 1 ? 's' : ''} · ${zoneStr}\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\n\n_À très bientôt au Café de la Place !_`;
+      }
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      return false;
+    }
+
+    // ── BILINGUAL i18n ENGINE ──
+    // Reads data-fr / data-en attrs on every tagged element, swaps textContent / innerHTML on toggle.
+    let _currentLang = localStorage.getItem('cdp_lang') || 'fr';
+
+    function applyLang(lang) {
+      _currentLang = lang;
+      localStorage.setItem('cdp_lang', lang);
+      document.documentElement.lang = lang === 'en' ? 'en' : 'fr';
+      document.getElementById('langLabel').textContent = lang === 'en' ? 'FR' : 'EN';
+      document.querySelectorAll('[data-fr]').forEach(el => {
+        const val = el.getAttribute('data-' + lang);
+        if (val === null) return;
+        if (/<[a-z]/i.test(val)) { el.innerHTML = val; } else { el.textContent = val; }
+      });
+    }
+
+    function toggleLang() {
+      applyLang(_currentLang === 'fr' ? 'en' : 'fr');
+    }
+
+    // Restore persisted lang on load
+    if (_currentLang === 'en') applyLang('en');
   </script>
 </body>
 </html>
