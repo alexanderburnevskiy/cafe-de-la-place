@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Service — Café de la Place</title>
+  <title>Service & Réservations — Café de la Place</title>
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="stylesheet" href="assets/style.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -14,22 +14,265 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --cream: #f5f0e8;
-      --cream-dark: #ede6d6;
+      --cream: #f6f1e8;
+      --cream-light: #faf7f2;
+      --cream-dark: #ede5d8;
       --stone: #2c2520;
       --stone-mid: #5c4f44;
       --stone-light: #9c8c7c;
+      --stone-faint: rgba(92,79,68,0.12);
       --accent: #8b5c2a;
       --accent-dark: #6b4420;
-      --white: #fdfbf7;
+      --white: #ffffff;
+      
+      /* Semantic Status Colors */
+      --amber-bg: #fef3c7;
+      --amber-text: #92400e;
+      --amber-border: #fcd34d;
+      
+      --blue-bg: #e0f2fe;
+      --blue-text: #0369a1;
+      --blue-border: #bae6fd;
+      
+      --green-bg: #dcfce7;
+      --green-text: #15803d;
+      --green-border: #86efac;
+      
+      --red-bg: #fee2e2;
+      --red-text: #b91c1c;
+      --red-border: #fca5a5;
     }
+
     body {
       font-family: 'Inter', -apple-system, sans-serif;
       background: var(--cream);
       color: var(--stone);
       -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
     }
     .serif { font-family: 'DM Serif Display', Georgia, serif; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(92,79,68,0.2); border-radius: 9999px; }
+
+    /* ── TOPBAR ELEVATION ── */
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(246,241,232,0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--stone-faint);
+    }
+
+    /* ── CLEAN CARD ROW ── */
+    .res-row {
+      background: var(--white);
+      border-radius: 1rem;
+      border: 1px solid rgba(92,79,68,0.1);
+      padding: 1rem 1.25rem;
+      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      box-shadow: 0 1px 3px rgba(44,37,32,0.02);
+    }
+    .res-row:hover {
+      box-shadow: 0 6px 20px -2px rgba(44,37,32,0.06);
+      border-color: rgba(92,79,68,0.2);
+      transform: translateY(-1px);
+    }
+    .res-row.cancelled {
+      opacity: 0.45;
+      background: rgba(246,241,232,0.5);
+    }
+    .res-row.cancelled .res-name {
+      text-decoration: line-through;
+    }
+
+    /* ── TIME BADGE ── */
+    .time-badge {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--stone);
+      letter-spacing: -0.02em;
+    }
+
+    /* ── PILLS ── */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0.28rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .pill-guest {
+      background: var(--cream);
+      color: var(--stone);
+      border: 1px solid rgba(92,79,68,0.15);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.35rem 0.75rem;
+    }
+
+    .pill-table-select {
+      background: var(--cream-light);
+      color: var(--stone-mid);
+      border: 1px solid rgba(92,79,68,0.18);
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .pill-table-select:focus, .pill-table-select:hover {
+      border-color: var(--stone);
+      color: var(--stone);
+      background: var(--white);
+    }
+
+    /* ── STATUS SELECTOR PILL ── */
+    .status-select {
+      border-radius: 9999px;
+      padding: 0.35rem 0.8rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      outline: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+    }
+    .status-select.pending {
+      background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber-border);
+    }
+    .status-select.confirmed {
+      background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue-border);
+    }
+    .status-select.seated {
+      background: var(--green-bg); color: var(--green-text); border-color: var(--green-border);
+    }
+    .status-select.cancelled {
+      background: rgba(92,79,68,0.08); color: var(--stone-light); border-color: rgba(92,79,68,0.15);
+    }
+
+    /* ── ONE-TAP ACTION BUTTONS ── */
+    .btn-seat-fast {
+      background: var(--green-bg);
+      color: var(--green-text);
+      border: 1px solid var(--green-border);
+      border-radius: 9999px;
+      padding: 0.38rem 0.85rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .btn-seat-fast:hover {
+      background: #22c55e;
+      color: #ffffff;
+      border-color: #22c55e;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(34,197,94,0.25);
+    }
+
+    .btn-action-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--stone-mid);
+      background: var(--cream);
+      border: 1px solid rgba(92,79,68,0.15);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-action-icon:hover {
+      background: var(--white);
+      border-color: var(--stone);
+      color: var(--stone);
+      transform: translateY(-1px);
+    }
+    .btn-action-icon.wa:hover {
+      background: #25d366;
+      border-color: #25d366;
+      color: #ffffff;
+    }
+    .btn-action-icon.trash {
+      color: var(--stone-light);
+    }
+    .btn-action-icon.trash:hover {
+      background: var(--red-bg);
+      border-color: var(--red-border);
+      color: var(--red-text);
+    }
+
+    /* ── DATE PILLS BAR ── */
+    .date-nav-btn {
+      padding: 0.35rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid rgba(92,79,68,0.15);
+      background: var(--white);
+      color: var(--stone-mid);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.14s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .date-nav-btn:hover:not(.disabled) {
+      border-color: var(--stone);
+      color: var(--stone);
+    }
+    .date-nav-btn.active {
+      background: var(--stone);
+      color: var(--white);
+      border-color: var(--stone);
+    }
+    .date-nav-btn.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      background: rgba(92,79,68,0.06);
+    }
+
+    /* ── FILTER SWITCH ── */
+    .filter-pill {
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--stone-light);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-pill.active {
+      background: var(--stone);
+      color: var(--white);
+    }
 
     /* ── FIELD ── */
     .field-input {
@@ -40,172 +283,6 @@
     }
     .field-input:focus { border-color: var(--stone); box-shadow: 0 0 0 3px rgba(44,37,32,0.08); }
     .field-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--stone-light); margin-bottom: 0.4rem; display: block; }
-
-    /* ── STATUS BADGES ── */
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 9999px;
-      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-    }
-    .badge-pending   { background: #f7ede0; color: var(--accent); border: 1px solid rgba(139,92,42,0.25); }
-    .badge-confirmed { background: #e8f0fe; color: #1a56db; border: 1px solid rgba(26,86,219,0.2); }
-    .badge-seated    { background: #ecfdf5; color: #065f46; border: 1px solid rgba(6,95,70,0.2); }
-    .badge-cancelled { background: rgba(92,79,68,0.08); color: var(--stone-light); border: 1px solid rgba(92,79,68,0.15); text-decoration: line-through; }
-
-    /* ── ZONE BADGES ── */
-    .badge-zone-terrasse { background: #ecfdf5; color: #065f46; border: 1.5px solid #a7f3d0; }
-    .badge-zone-salle    { background: #fbf5ee; color: #5c4f44; border: 1.5px solid rgba(92,79,68,0.2); }
-
-    /* ── SPACIOUS CARD CONTAINER ── */
-    .res-card {
-      background: var(--white);
-      border-radius: 1.25rem;
-      border: 1.5px solid rgba(92,79,68,0.12);
-      box-shadow: 0 4px 20px -2px rgba(44,37,32,0.04), 0 1px 3px rgba(44,37,32,0.02);
-      padding: 1.4rem 1.6rem;
-      transition: all 0.22s cubic-bezier(0.16,1,0.3,1);
-      display: flex;
-      flex-direction: column;
-      gap: 0.95rem;
-    }
-    .res-card:hover {
-      box-shadow: 0 8px 30px -4px rgba(44,37,32,0.08);
-      border-color: rgba(92,79,68,0.22);
-    }
-    .res-card.cancelled {
-      opacity: 0.45;
-      background: rgba(245,240,232,0.6);
-    }
-
-    /* ── PROMINENT GUEST COUNT BADGE ── */
-    .guest-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 0.45rem 1rem;
-      border-radius: 9999px;
-      background: #fbf5ee;
-      color: var(--accent-dark);
-      border: 1.5px solid rgba(139,92,42,0.22);
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    /* ── LARGE TOUCH-FRIENDLY PHONE BUTTON ── */
-    .phone-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 0.5rem 1.15rem;
-      border-radius: 9999px;
-      background: var(--cream);
-      color: var(--stone);
-      border: 1.5px solid rgba(92,79,68,0.2);
-      font-size: 0.88rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
-    }
-    .phone-btn:hover {
-      background: #ede3d3;
-      border-color: var(--stone);
-      color: var(--stone);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(44,37,32,0.08);
-    }
-    .phone-btn:active { transform: scale(0.97); }
-
-    /* ── WHATSAPP BUTTON ── */
-    .whatsapp-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0.5rem 1rem;
-      border-radius: 9999px;
-      background: #ecfdf5;
-      color: #065f46;
-      border: 1.5px solid #a7f3d0;
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
-    }
-    .whatsapp-btn:hover {
-      background: #25d366;
-      border-color: #25d366;
-      color: #ffffff;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(37,211,102,0.25);
-    }
-    .whatsapp-btn:active { transform: scale(0.97); }
-
-    /* ── EMAIL LINK ── */
-    .email-btn {
-      font-size: 0.82rem;
-      color: var(--stone-light);
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .email-btn:hover { color: var(--stone); text-decoration: underline; }
-
-    /* ── ACTION BUTTONS ── */
-    .act-btn {
-      padding: 0.55rem 0.95rem; border-radius: 0.75rem;
-      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em;
-      cursor: pointer; border: 1.5px solid transparent;
-      transition: all 0.16s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .act-btn:active { transform: scale(0.97); }
-    .act-confirm { background: #eff6ff; color: #1d4ed8; border-color: rgba(29,78,216,0.2); }
-    .act-confirm:hover, .act-confirm.on { background: #1d4ed8; color: #fff; border-color: #1d4ed8; box-shadow: 0 2px 8px rgba(29,78,216,0.25); }
-    .act-seat    { background: #ecfdf5; color: #047857; border-color: rgba(4,120,87,0.2); }
-    .act-seat:hover, .act-seat.on    { background: #047857; color: #fff; border-color: #047857; box-shadow: 0 2px 8px rgba(4,120,87,0.25); }
-    .act-cancel  { background: rgba(92,79,68,0.06); color: var(--stone-mid); border-color: rgba(92,79,68,0.12); }
-    .act-cancel:hover, .act-cancel.on { background: #fee2e2; color: #b91c1c; border-color: rgba(185,28,28,0.25); }
-
-    /* ── PERMANENT DELETE BUTTON ── */
-    .act-btn-delete {
-      padding: 0.55rem 0.95rem; border-radius: 0.75rem;
-      font-size: 0.78rem; font-weight: 600;
-      color: #dc2626; background: #fef2f2;
-      border: 1.5px solid rgba(220,38,38,0.2);
-      cursor: pointer; transition: all 0.16s ease;
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      margin-left: auto;
-    }
-    .act-btn-delete:hover {
-      background: #dc2626; color: #ffffff; border-color: #dc2626;
-      transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.2);
-    }
-    .act-btn-delete:active { transform: scale(0.97); }
-
-    /* ── DATE TABS ── */
-    .date-tab {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 0.4rem 0.85rem; border-radius: 9999px; border: 1.5px solid rgba(92,79,68,0.15);
-      cursor: pointer; font-size: 0.7rem; font-weight: 600; background: var(--white);
-      color: var(--stone-mid); transition: all 0.15s ease; white-space: nowrap; user-select: none;
-    }
-    .date-tab:hover:not(.disabled) { border-color: var(--stone); color: var(--stone); }
-    .date-tab.active { background: var(--stone); color: var(--white); border-color: var(--stone); }
-    .date-tab.disabled { opacity: 0.42; cursor: not-allowed; background: rgba(92,79,68,0.06); border-color: rgba(92,79,68,0.1); color: var(--stone-light); }
-
-    /* ── FILTER TABS ── */
-    .filter-tab {
-      padding: 0.4rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;
-      cursor: pointer; border: none; background: transparent; color: var(--stone-light);
-      transition: all 0.15s ease; letter-spacing: 0.02em;
-    }
-    .filter-tab.active { background: var(--stone); color: var(--white); }
-
-    /* ── TABLE SELECTOR ── */
-    .table-select {
-      font-size: 0.72rem; font-weight: 600; color: var(--stone);
-      background: var(--cream); border: 1px solid rgba(92,79,68,0.2);
-      border-radius: 0.5rem; padding: 3px 8px; outline: none; cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .table-select:focus { border-color: var(--accent); }
 
     /* ── MODAL ── */
     .modal-overlay {
@@ -238,10 +315,22 @@
     .rt-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse-dot 2s infinite; display: inline-block; }
     .rt-dot.off { background: rgba(92,79,68,0.3); animation: none; }
 
-    /* ── CARD ENTER ── */
-    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .card-enter { animation: slideIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
-    .card-cancelled { opacity: 0.45; }
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .res-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+      .res-row-right {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(92,79,68,0.08);
+        padding-top: 0.6rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -252,11 +341,11 @@
       <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem;">
         <img src="assets/logo.png" alt="Café de la Place" style="height:44px;width:auto;object-fit:contain;" />
         <div>
-          <p class="text-[0.65rem] font-semibold uppercase tracking-widest" style="color:var(--stone-light);">Espace Réservé</p>
+          <p class="text-[0.65rem] font-semibold uppercase tracking-widest" style="color:var(--stone-light);">Espace Service</p>
           <h2 class="serif text-xl" style="color:var(--stone);line-height:1.2;">Café de la Place</h2>
         </div>
       </div>
-      <p class="text-sm font-light mb-6" style="color:var(--stone-light);">Accès réservé au personnel du restaurant.</p>
+      <p class="text-xs font-light mb-6" style="color:var(--stone-light);">Accès réservé au personnel du restaurant.</p>
 
       <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
@@ -283,89 +372,108 @@
   <!-- ════ APP CONTENT ════ -->
   <div id="appScreen" class="hidden">
 
-    <!-- ── TOPBAR ── -->
-    <header style="position:sticky;top:0;z-index:40;background:rgba(245,240,232,0.96);backdrop-filter:blur(12px);border-bottom:1px solid rgba(92,79,68,0.12);">
-      <div style="max-width:880px;margin:0 auto;padding:0.75rem 1.25rem;">
+    <!-- ── SINGLE UNIFIED ELEVATED TOPBAR ── -->
+    <header class="topbar">
+      <div style="max-width:960px;margin:0 auto;padding:0.75rem 1.25rem;">
         
-        <!-- Header Top Row -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+        <!-- Top Row: Brand, Date Selector & Quick CTAs -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+          
+          <!-- Brand & Live Indicator -->
           <div style="display:flex;align-items:center;gap:0.75rem;">
-            <img src="assets/logo.png" alt="Café de la Place" style="height:32px;width:auto;object-fit:contain;filter:brightness(0);opacity:0.88;" />
-            <div>
-              <span class="serif" style="font-size:1.1rem;color:var(--stone);font-weight:600;">Café de la Place</span>
-              <span style="font-size:0.75rem;color:var(--stone-light);margin-left:0.5rem;" id="headerDate"></span>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:0.75rem;">
-            <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.7rem;color:var(--stone-light);">
+            <a href="index.html" title="Retour au site" style="display:flex;align-items:center;gap:0.6rem;text-decoration:none;">
+              <img src="assets/logo.png" alt="Café de la Place" style="height:30px;width:auto;object-fit:contain;filter:brightness(0);opacity:0.88;" />
+              <span class="serif" style="font-size:1.15rem;color:var(--stone);font-weight:600;">Café de la Place</span>
+            </a>
+            <div style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:9999px;background:rgba(92,79,68,0.06);font-size:0.68rem;color:var(--stone-mid);">
               <span class="rt-dot off" id="rtDot"></span>
               <span id="rtLabel">Connexion...</span>
             </div>
-            <button onclick="handleLogout()" style="font-size:0.7rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--stone-light);background:none;border:1.5px solid rgba(92,79,68,0.2);padding:0.35rem 0.75rem;border-radius:9999px;cursor:pointer;" onmouseover="this.style.color='var(--stone)'" onmouseout="this.style.color='var(--stone-light)'">Quitter</button>
           </div>
+
+          <!-- Date Quick Stepper & Picker -->
+          <div style="display:flex;align-items:center;gap:0.35rem;background:var(--white);padding:3px 6px;border-radius:9999px;border:1px solid rgba(92,79,68,0.15);">
+            <button onclick="shiftDate(-1)" title="Jour précédent" style="background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:50%;color:var(--stone-mid);font-size:0.9rem;display:flex;align-items:center;">‹</button>
+            
+            <button onclick="document.getElementById('customDatePicker').showPicker ? document.getElementById('customDatePicker').showPicker() : document.getElementById('customDatePicker').focus()" style="background:none;border:none;cursor:pointer;font-size:0.78rem;font-weight:700;color:var(--stone);padding:2px 6px;display:flex;align-items:center;gap:5px;">
+              <span>📅</span>
+              <span id="headerDate">Chargement...</span>
+            </button>
+
+            <button onclick="shiftDate(1)" title="Jour suivant" style="background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:50%;color:var(--stone-mid);font-size:0.9rem;display:flex;align-items:center;">›</button>
+            <input type="date" id="customDatePicker" onchange="setActiveDate(this.value)" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;" />
+          </div>
+
+          <!-- Quick Action CTAs -->
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <button onclick="openManualModal()" style="display:inline-flex;align-items:center;gap:6px;background:var(--stone);color:var(--white);border:none;border-radius:9999px;padding:0.42rem 0.95rem;font-size:0.75rem;font-weight:700;letter-spacing:0.03em;cursor:pointer;transition:all 0.18s ease;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--stone)'">
+              <span>+ Réservation</span>
+            </button>
+            <button onclick="handleLogout()" title="Fermer la session" style="background:none;border:1px solid rgba(92,79,68,0.2);color:var(--stone-light);border-radius:9999px;padding:0.38rem 0.75rem;font-size:0.7rem;font-weight:600;cursor:pointer;transition:all 0.15s ease;" onmouseover="this.style.borderColor='var(--stone)';this.style.color='var(--stone)'" onmouseout="this.style.borderColor='rgba(92,79,68,0.2)';this.style.color='var(--stone-light)'">
+              Quitter
+            </button>
+          </div>
+
         </div>
 
-        <!-- Controls: Filters + Search + Couverts Jauge + Button -->
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
-          <!-- Filter Tabs -->
-          <div style="display:flex;background:rgba(92,79,68,0.08);border-radius:9999px;padding:3px;gap:2px;">
-            <button class="filter-tab active" id="tab-all"  onclick="setFilter('all')">Tout</button>
-            <button class="filter-tab"        id="tab-midi" onclick="setFilter('midi')">Midi</button>
-            <button class="filter-tab"        id="tab-soir" onclick="setFilter('soir')">Soir</button>
+        <!-- Controls Sub-Bar: Service Filter Tabs, Couverts Metric & Search -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-top:0.65rem;flex-wrap:wrap;">
+          
+          <!-- Filter Tabs + Couvert Counter in 1 cohesive unit -->
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            <div style="display:inline-flex;background:rgba(92,79,68,0.08);border-radius:9999px;padding:3px;gap:2px;">
+              <button class="filter-pill active" id="tab-all"  onclick="setFilter('all')">Tout (<span id="totalResCount">0</span>)</button>
+              <button class="filter-pill"        id="tab-midi" onclick="setFilter('midi')">☀️ Midi (<span id="midiResCount">0</span>)</button>
+              <button class="filter-pill"        id="tab-soir" onclick="setFilter('soir')">🌙 Soir (<span id="soirResCount">0</span>)</button>
+            </div>
+
+            <!-- Glanceable Couverts Metric -->
+            <div style="display:inline-flex;align-items:center;gap:6px;padding:0.3rem 0.75rem;border-radius:9999px;background:var(--white);border:1px solid rgba(92,79,68,0.12);font-size:0.72rem;color:var(--stone-mid);">
+              <span>👥 Total : <strong id="totalGuestsCount" style="color:var(--stone);font-weight:700;">0</strong> couverts</span>
+              <span style="opacity:0.35;">·</span>
+              <span style="color:#b45309;"><strong id="countMidi">0</strong> midi</span>
+              <span style="opacity:0.35;">·</span>
+              <span style="color:#4338ca;"><strong id="countSoir">0</strong> soir</span>
+            </div>
           </div>
 
-          <!-- Quick Search -->
-          <div style="position:relative;flex:1;min-width:180px;max-width:260px;">
-            <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--stone-light);" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <!-- Ultra-fast Search -->
+          <div style="position:relative;min-width:180px;flex:1;max-width:260px;">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--stone-light);font-size:0.8rem;">🔍</span>
             <input type="search" id="searchInput" placeholder="Nom ou téléphone…" oninput="renderList()"
-              style="width:100%;padding:0.38rem 0.75rem 0.38rem 2rem;font-size:0.78rem;font-family:inherit;background:var(--white);border:1.5px solid rgba(92,79,68,0.2);border-radius:9999px;outline:none;color:var(--stone);transition:border-color 0.18s;"
-              onfocus="this.style.borderColor='var(--stone)'" onblur="this.style.borderColor='rgba(92,79,68,0.2)'" />
+              style="width:100%;padding:0.38rem 1.8rem 0.38rem 1.9rem;font-size:0.76rem;background:var(--white);border:1px solid rgba(92,79,68,0.18);border-radius:9999px;outline:none;color:var(--stone);transition:border-color 0.15s;"
+              onfocus="this.style.borderColor='var(--stone)'" onblur="this.style.borderColor='rgba(92,79,68,0.18)'" />
+            <button onclick="clearSearch()" id="clearSearchBtn" class="hidden" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--stone-light);font-size:0.7rem;padding:2px;">✕</button>
           </div>
 
-          <!-- Shift Couverts Jauge -->
-          <div style="display:flex;align-items:center;gap:0.4rem;" id="shiftJauge">
-            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:9999px;background:rgba(217,119,6,0.1);color:#b45309;font-size:0.72rem;font-weight:600;border:1px solid rgba(217,119,6,0.2);">
-              <span style="width:6px;height:6px;border-radius:50%;background:#d97706;"></span>
-              Midi : <strong id="countMidi" style="font-weight:700;">0</strong> couverts
-            </span>
-            <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:9999px;background:rgba(79,70,229,0.1);color:#4338ca;font-size:0.72rem;font-weight:600;border:1px solid rgba(79,70,229,0.2);">
-              <span style="width:6px;height:6px;border-radius:50%;background:#4f46e5;"></span>
-              Soir : <strong id="countSoir" style="font-weight:700;">0</strong> couverts
-            </span>
-          </div>
-
-          <!-- Quick Action -->
-          <button onclick="openManualModal()" style="display:flex;align-items:center;gap:0.4rem;background:var(--stone);color:var(--white);border:none;border-radius:9999px;padding:0.45rem 0.9rem;font-size:0.75rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:background 0.2s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--stone)'">
-            + Réservation
-          </button>
         </div>
 
+      </div>
+
+      <!-- Quick 10-Day Strip (Minimalist, 34px height) -->
+      <div style="background:rgba(246,241,232,0.6);border-top:1px solid rgba(92,79,68,0.06);padding:0.35rem 1.25rem;overflow-x:auto;scrollbar-width:none;">
+        <div style="max-width:960px;margin:0 auto;display:flex;gap:0.4rem;align-items:center;" id="dateTabs"></div>
       </div>
     </header>
 
-    <!-- ── DATE TABS ── -->
-    <div style="position:sticky;top:108px;z-index:30;background:var(--cream);border-bottom:1px solid rgba(92,79,68,0.1);">
-      <div style="max-width:880px;margin:0 auto;padding:0.6rem 1.25rem;display:flex;align-items:center;gap:0.75rem;">
-        <div style="overflow-x:auto;flex:1;scrollbar-width:none;">
-          <div style="display:flex;gap:0.45rem;" id="dateTabs"></div>
-        </div>
-        <input type="date" id="customDatePicker" onchange="setActiveDate(this.value)"
-          style="font-size:0.72rem;font-weight:600;background:var(--white);border:1.5px solid rgba(92,79,68,0.2);border-radius:9999px;padding:0.35rem 0.75rem;outline:none;cursor:pointer;color:var(--stone-mid);" />
-      </div>
-    </div>
+    <!-- ── RESERVATION FEED ── -->
+    <main style="max-width:960px;margin:0 auto;padding:1.25rem 1.25rem 6rem 1.25rem;">
+      <div id="reservationList" style="display:flex;flex-direction:column;gap:0.65rem;"></div>
 
-    <!-- ── RESERVATION LIST ── -->
-    <main style="max-width:880px;margin:0 auto;padding:1.25rem;padding-bottom:6rem;">
-      <div id="reservationList" style="display:flex;flex-direction:column;gap:1rem;"></div>
-      <div id="emptyState" class="hidden" style="text-align:center;padding:5rem 0;color:var(--stone-light);">
-        <p style="font-size:0.875rem;font-weight:600;color:var(--stone-mid);margin-bottom:0.25rem;">Aucune réservation pour ce service</p>
-        <p style="font-size:0.75rem;font-weight:400;" id="emptySub">Les nouvelles réservations apparaissent ici en temps réel.</p>
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden" style="text-align:center;padding:4.5rem 1rem;color:var(--stone-light);">
+        <p style="font-size:2rem;margin-bottom:0.5rem;">🍽</p>
+        <p style="font-size:0.95rem;font-weight:600;color:var(--stone-mid);margin-bottom:0.25rem;">Aucune réservation pour ce service</p>
+        <p style="font-size:0.78rem;font-weight:400;" id="emptySub">Les nouvelles réservations apparaissent ici en temps réel.</p>
+        <button onclick="openManualModal()" style="margin-top:1.25rem;background:var(--stone);color:var(--white);border:none;border-radius:9999px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:600;cursor:pointer;">
+          + Ajouter une réservation manuelle
+        </button>
       </div>
     </main>
 
     <!-- ── TOAST ── -->
     <div class="toast" id="toast">
-      <span id="toastMsg">Nouvelle réservation</span>
+      <span id="toastMsg">Notification</span>
     </div>
 
     <!-- ── MANUAL BOOKING MODAL ── -->
@@ -466,13 +574,17 @@
       midi: ['11:45','12:00','12:15','12:30','13:00'],
       soir: ['18:30','19:00','19:30','20:00','20:30'],
     };
-    const STATUS_LABELS = { pending:'En attente', confirmed:'Confirmé', seated:'Installé', cancelled:'Annulé' };
-    const STATUS_BADGE  = { pending:'badge-pending', confirmed:'badge-confirmed', seated:'badge-seated', cancelled:'badge-cancelled' };
-    const DAYS_FR = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+    const STATUS_LABELS = { pending:'En attente', confirmed:'Confirmé', seated:'À table', cancelled:'Annulé' };
+    const DAYS_FR = ['Dim.','Lun.','Mar.','Mer.','Jeu.','Ven.','Sam.'];
+
+    const ALL_TABLES = [
+      'Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5',
+      'Terrasse 1', 'Terrasse 2', 'Terrasse 3', 'Terrasse 4'
+    ];
 
     let allReservations = [], activeFilter = 'all', activeDate = null, sbClient = null, audioCtx = null;
 
-    // ── LOCAL OVERRIDES CACHE (Persists table and status changes seamlessly) ──
+    // ── PERSISTENCE HELPERS ──
     function getOverrides() {
       try { return JSON.parse(localStorage.getItem('cdp_res_overrides') || '{}'); } catch(e) { return {}; }
     }
@@ -484,7 +596,6 @@
       } catch(e) {}
     }
 
-    // ── PERMANENT DELETED RESERVATIONS CACHE ──
     function getDeletedIds() {
       try { return JSON.parse(localStorage.getItem('cdp_deleted_reservations') || '[]'); } catch(e) { return []; }
     }
@@ -503,7 +614,6 @@
       let rawNotes = r.notes || '';
       let customerName = r.customer_name || '';
 
-      // Clean realistic mapping for legacy gibberish demo data
       if (rawNotes.includes('квпра')) {
         rawNotes = '[Table: Table 2 | Zone: Intérieur] Allergie aux fruits de mer, table calme si possible';
         if (customerName === 'Alexander Burnevskiy') customerName = 'Sophie & Marc Blanc';
@@ -523,8 +633,6 @@
       else if (rawNotes.toLowerCase().includes('terrasse')) zone = 'terrasse';
 
       const cleanNotes = rawNotes.replace(/\[(Table|Zone):[^\]]+\]\s*/gi, '').trim();
-
-      // Apply persistent overrides
       const overrides = getOverrides()[r.id] || {};
 
       return {
@@ -569,7 +677,7 @@
       checkAuth();
     }
 
-    // ── DASHBOARD ──
+    // ── DASHBOARD INITIALIZATION ──
     function initDashboard() {
       buildDateTabs();
       updateManualSlots();
@@ -591,45 +699,64 @@
       return year + '-' + month + '-' + day;
     }
 
+    // ── DATE CONTROLLER & STRIP ──
     function buildDateTabs() {
       const container = document.getElementById('dateTabs');
       container.innerHTML = '';
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-      // Determine initial open date: if today is Sun (0) or Mon (1), find the next Tuesday
+      // If Sunday (0) or Monday (1), jump to Tuesday
       let initialDate = new Date(today);
       if (initialDate.getDay() === 0) initialDate.setDate(initialDate.getDate() + 2);
       else if (initialDate.getDay() === 1) initialDate.setDate(initialDate.getDate() + 1);
 
-      activeDate = toLocalISO(initialDate);
+      if (!activeDate) {
+        activeDate = toLocalISO(initialDate);
+      }
       syncHeaderAndPicker(activeDate);
 
-      // Generate 10 days for staff navigation
+      // Generate 10 days
       for (let i = 0; i < 10; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
         const iso = toLocalISO(d);
         const dow = d.getDay();
-        const isClosed = (dow === 0 || dow === 1); // Sunday & Monday closed
+        const isClosed = (dow === 0 || dow === 1);
 
         const btn = document.createElement('button');
         btn.dataset.iso = iso;
 
+        let label = '';
+        if (i === 0) label = "Aujourd'hui";
+        else if (i === 1) label = "Demain";
+        else label = `${DAYS_FR[dow]} ${d.getDate()}`;
+
         if (isClosed) {
-          btn.className = 'date-tab disabled';
-          btn.title = 'Fermé le dimanche et le lundi';
+          btn.className = 'date-nav-btn disabled';
+          btn.title = 'Fermé le dimanche et lundi';
           btn.onclick = () => showToast('Le restaurant est fermé le dimanche et le lundi');
-          btn.innerHTML = `<span style="opacity:0.6;font-size:0.6rem;">${DAYS_FR[dow]}</span><span>${d.getDate()}</span><span style="font-size:0.55rem;font-weight:700;letter-spacing:0.04em;">Fermé</span>`;
+          btn.innerHTML = `<span>${label}</span> <span style="opacity:0.5;font-size:0.65rem;">(Fermé)</span>`;
         } else {
           const isActive = (iso === activeDate);
-          btn.className = 'date-tab' + (isActive ? ' active' : '');
+          btn.className = 'date-nav-btn' + (isActive ? ' active' : '');
           btn.onclick = () => setActiveDate(iso);
-          btn.innerHTML = `<span style="opacity:0.6;font-size:0.6rem;">${DAYS_FR[dow]}</span><span>${d.getDate()}</span>`;
+          btn.innerHTML = `<span>${label}</span>`;
         }
-
         container.appendChild(btn);
       }
+    }
+
+    function shiftDate(offset) {
+      const [y, m, d] = (activeDate || toLocalISO(new Date())).split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() + offset);
+
+      // Skip closed Sun/Mon
+      if (dt.getDay() === 0) dt.setDate(dt.getDate() + (offset > 0 ? 2 : -1));
+      else if (dt.getDay() === 1) dt.setDate(dt.getDate() + (offset > 0 ? 1 : -2));
+
+      setActiveDate(toLocalISO(dt));
     }
 
     function syncHeaderAndPicker(iso) {
@@ -640,8 +767,15 @@
 
       const [y, m, d] = iso.split('-').map(Number);
       const dt = new Date(y, m - 1, d);
-      const str = dt.toLocaleDateString('fr-CH', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-      document.getElementById('headerDate').textContent = str.charAt(0).toUpperCase() + str.slice(1);
+      const todayISO = toLocalISO(new Date());
+
+      let str = '';
+      if (iso === todayISO) {
+        str = "Aujourd'hui, " + dt.getDate() + ' ' + dt.toLocaleDateString('fr-CH', { month: 'short' });
+      } else {
+        str = dt.toLocaleDateString('fr-CH', { weekday: 'short', day: 'numeric', month: 'short' });
+      }
+      document.getElementById('headerDate').textContent = str;
     }
 
     function setActiveDate(iso) {
@@ -655,7 +789,7 @@
       activeDate = iso;
       syncHeaderAndPicker(iso);
 
-      document.querySelectorAll('#dateTabs .date-tab').forEach(b => {
+      document.querySelectorAll('#dateTabs .date-nav-btn').forEach(b => {
         if (!b.classList.contains('disabled')) {
           b.classList.toggle('active', b.dataset.iso === iso);
         }
@@ -663,6 +797,7 @@
       renderList();
     }
 
+    // ── DATA LOADING ──
     async function loadReservations() {
       try {
         const { data, error } = await sbClient.from('reservations').select('*').order('reservation_time', { ascending: true });
@@ -773,177 +908,207 @@
       document.getElementById('rtLabel').textContent = label;
     }
 
-    // ── RENDER & CAPACITY JAUGE ──
+    // ── SEARCH ──
+    function clearSearch() {
+      const input = document.getElementById('searchInput');
+      input.value = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderList();
+    }
+
+    // ── RENDER LIST (Clean, Lightweight Bento Rows) ──
     function renderList() {
       const list = document.getElementById('reservationList');
       const empty = document.getElementById('emptyState');
       list.innerHTML = '';
 
-      // Reservations for the active date (regardless of filter for jauge)
-      const dayReservations = allReservations.filter(r => r.reservation_date === activeDate && r.status !== 'cancelled');
+      const searchInput = document.getElementById('searchInput');
+      const searchQ = (searchInput?.value || '').toLowerCase().trim();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !searchQ);
 
-      // Calculate Couverts Jauge
-      const countMidi = dayReservations.filter(r => r.service_type === 'midi').reduce((sum, r) => sum + (parseInt(r.guests_count) || 0), 0);
-      const countSoir = dayReservations.filter(r => r.service_type === 'soir').reduce((sum, r) => sum + (parseInt(r.guests_count) || 0), 0);
+      // All reservations for the day (unfiltered by service for metrics)
+      const dayAll = allReservations.filter(r => r.reservation_date === activeDate && r.status !== 'cancelled');
+      const countMidi = dayAll.filter(r => r.service_type === 'midi').reduce((sum, r) => sum + (parseInt(r.guests_count) || 0), 0);
+      const countSoir = dayAll.filter(r => r.service_type === 'soir').reduce((sum, r) => sum + (parseInt(r.guests_count) || 0), 0);
 
       document.getElementById('countMidi').textContent = countMidi;
       document.getElementById('countSoir').textContent = countSoir;
+      document.getElementById('totalGuestsCount').textContent = countMidi + countSoir;
 
-      // Filtered list for display
-      const searchQ = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
-      const filtered = allReservations
+      const dayReservations = allReservations.filter(r => r.reservation_date === activeDate);
+      document.getElementById('totalResCount').textContent = dayReservations.filter(r => r.status !== 'cancelled').length;
+      document.getElementById('midiResCount').textContent = dayReservations.filter(r => r.service_type === 'midi' && r.status !== 'cancelled').length;
+      document.getElementById('soirResCount').textContent = dayReservations.filter(r => r.service_type === 'soir' && r.status !== 'cancelled').length;
+
+      // Filter by service and search query
+      const filtered = dayReservations
         .filter(r => {
-          const matchDate = r.reservation_date === activeDate;
-          const matchService = activeFilter === 'all' || r.service_type === activeFilter;
+          const matchService = (activeFilter === 'all' || r.service_type === activeFilter);
           const matchSearch = !searchQ ||
             (r.customer_name || '').toLowerCase().includes(searchQ) ||
-            (r.customer_phone || '').replace(/[\s\-\.]/g,'').includes(searchQ.replace(/[\s\-\.]/g,''));
-          return matchDate && matchService && matchSearch;
+            (r.customer_phone || '').replace(/[\s\-\.]/g,'').includes(searchQ.replace(/[\s\-\.]/g,'')) ||
+            (r.table_number || '').toLowerCase().includes(searchQ);
+          return matchService && matchSearch;
         })
         .sort((a,b) => (a.reservation_time || '').localeCompare(b.reservation_time || ''));
 
       if (!filtered.length) {
         empty.classList.remove('hidden');
-        document.getElementById('emptySub').textContent = `Aucune réservation enregistrée pour ce jour (${activeDate}).`;
+        document.getElementById('emptySub').textContent = searchQ
+          ? `Aucun résultat pour « ${searchQ} ».`
+          : `Aucune réservation enregistrée pour ce jour (${activeDate}).`;
         return;
       }
       empty.classList.add('hidden');
 
-      filtered.forEach(r => {
-        const card = document.createElement('div');
-        card.className = 'res-card card-enter' + (r.status === 'cancelled' ? ' cancelled' : '');
+      // Group by service if 'all' is selected
+      const renderGroup = (serviceKey, serviceTitle, icon, items) => {
+        if (!items.length) return;
 
-        const serviceStyle = r.service_type === 'midi'
-          ? 'background:rgba(217,119,6,0.12);color:#b45309;border:1px solid rgba(217,119,6,0.25);'
-          : 'background:rgba(79,70,229,0.12);color:#4338ca;border:1px solid rgba(79,70,229,0.25);';
-
-        // 1-Tap Touch-friendly Phone Button
-        let phoneHtml = '';
-        let whatsappHtml = '';
-        if (r.customer_phone) {
-          phoneHtml = `
-            <a href="tel:${r.customer_phone}" class="phone-btn" title="Appeler le client">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              <span>${r.customer_phone}</span>
-            </a>
+        // Group Header
+        if (activeFilter === 'all') {
+          const groupHdr = document.createElement('div');
+          groupHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.2rem 0.2rem;margin-top:0.4rem;';
+          const groupGuests = items.filter(r => r.status !== 'cancelled').reduce((sum, r) => sum + (parseInt(r.guests_count) || 0), 0);
+          groupHdr.innerHTML = `
+            <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--stone);display:flex;align-items:center;gap:6px;">
+              <span>${icon}</span>
+              <span>${serviceTitle}</span>
+            </span>
+            <span style="font-size:0.72rem;font-weight:600;color:var(--stone-light);">
+              ${items.length} table${items.length > 1 ? 's' : ''} · ${groupGuests} couvert${groupGuests > 1 ? 's' : ''}
+            </span>
           `;
-
-          let cleanPhone = r.customer_phone.replace(/[^0-9]/g, '');
-          if (cleanPhone.startsWith('0')) cleanPhone = '41' + cleanPhone.slice(1);
-          const svcName = r.service_type === 'midi' ? 'Midi' : 'Soir';
-          const waText = `Bonjour ${r.customer_name},\nNous avons le plaisir de vous confirmer votre réservation au Café de la Place :\n📅 Date : ${r.reservation_date} à ${r.reservation_time} (${svcName})\n👥 Couverts : ${r.guests_count} personne(s)\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\n\nÀ très bientôt au restaurant !`;
-          whatsappHtml = `
-            <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}" target="_blank" rel="noopener" class="whatsapp-btn" title="Envoyer confirmation WhatsApp">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              <span>WhatsApp</span>
-            </a>
-          `;
+          list.appendChild(groupHdr);
         }
 
-        let emailHtml = '';
-        if (r.customer_email) {
-          emailHtml = `<a href="mailto:${r.customer_email}" class="email-btn">${r.customer_email}</a>`;
-        }
+        items.forEach(r => {
+          const row = document.createElement('div');
+          row.className = 'res-row' + (r.status === 'cancelled' ? ' cancelled' : '');
 
-        // Zone Badge
-        const isTerrasse = (r.seating_zone === 'terrasse');
-        const zoneBadge = isTerrasse
-          ? `<span class="badge badge-zone-terrasse">🌿 Terrasse</span>`
-          : `<span class="badge badge-zone-salle">🍷 Intérieur</span>`;
+          // Quick Phone & WhatsApp
+          let contactHtml = '';
+          if (r.customer_phone) {
+            let cleanPhone = r.customer_phone.replace(/[^0-9]/g, '');
+            if (cleanPhone.startsWith('0')) cleanPhone = '41' + cleanPhone.slice(1);
+            const waText = `Bonjour ${r.customer_name},\nNous confirmons avec plaisir votre réservation au Café de la Place :\n📅 Date : ${r.reservation_date} à ${r.reservation_time}\n👥 Couverts : ${r.guests_count} personne(s)\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\nÀ très bientôt !`;
 
-        // Table Select Options
-        const tables = [
-          'Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5',
-          'Terrasse 1', 'Terrasse 2', 'Terrasse 3', 'Terrasse 4'
-        ];
-        let tableOptions = `<option value="">Table : Non assignée ▾</option>`;
-        tables.forEach(t => {
-          const sel = (r.table_number === t) ? 'selected' : '';
-          tableOptions += `<option value="${t}" ${sel}>${t}</option>`;
-        });
+            contactHtml = `
+              <a href="tel:${r.customer_phone}" class="btn-action-icon" title="Appeler ${r.customer_name} (${r.customer_phone})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </a>
+              <a href="https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}" target="_blank" rel="noopener" class="btn-action-icon wa" title="Envoyer confirmation WhatsApp">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              </a>
+            `;
+          }
 
-        card.innerHTML = `
-          <!-- Row 1: Time, Service, Zone, Status & Table Selector -->
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;padding-bottom:0.75rem;border-bottom:1px solid rgba(92,79,68,0.08);">
-            <div style="display:flex;align-items:center;gap:0.85rem;">
-              <span class="serif" style="font-size:1.85rem;font-weight:700;color:var(--stone);line-height:1;letter-spacing:-0.02em;">${r.reservation_time}</span>
-              <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:9999px;font-size:0.72rem;font-weight:700;letter-spacing:0.03em;text-transform:uppercase;${serviceStyle}">
-                ${r.service_type === 'midi' ? '☀️ Midi' : '🌙 Soir'}
-              </span>
-            </div>
+          // Table Options
+          let tableOptions = `<option value="">Table ▾</option>`;
+          ALL_TABLES.forEach(t => {
+            const sel = (r.table_number === t) ? 'selected' : '';
+            tableOptions += `<option value="${t}" ${sel}>${t}</option>`;
+          });
 
-            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-              ${zoneBadge}
-              <span class="badge ${STATUS_BADGE[r.status] || 'badge-pending'}">${STATUS_LABELS[r.status] || r.status}</span>
-              <select class="table-select" onchange="updateTable('${r.id}', this.value)" style="padding:0.4rem 0.75rem;font-size:0.78rem;">
-                ${tableOptions}
-              </select>
-            </div>
-          </div>
+          // Zone icon
+          const isTerrasse = (r.seating_zone === 'terrasse');
+          const zoneLabel = isTerrasse ? '🌿 Terrasse' : '🍷 Salle';
 
-          <!-- Row 2: Customer Identity + Hero Phone Button + Hero Guest Count Badge -->
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.85rem;">
-            <div style="min-width:180px;">
-              <h3 style="font-size:1.2rem;font-weight:700;color:var(--stone);margin:0 0 3px 0;letter-spacing:-0.01em;">${r.customer_name}</h3>
-              ${emailHtml}
-            </div>
+          // One-tap Seat button (if not already seated)
+          let quickSeatBtn = '';
+          if (r.status !== 'seated' && r.status !== 'cancelled') {
+            quickSeatBtn = `
+              <button class="btn-seat-fast" onclick="updateStatus('${r.id}', 'seated')" title="Installer immédiatement le client">
+                <span>✓ Installer</span>
+              </button>
+            `;
+          }
 
-            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-              ${phoneHtml}
-              ${whatsappHtml}
-              <div class="guest-badge" title="Nombre de personnes réservées">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.85;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                <span>${r.guests_count} ${r.guests_count > 1 ? 'personnes' : 'personne'}</span>
+          row.innerHTML = `
+            <!-- Left: Time + Guest Info -->
+            <div style="display:flex;align-items:center;gap:1.1rem;flex:1;min-width:0;">
+              
+              <!-- Time -->
+              <div style="text-align:left;min-width:70px;">
+                <div class="time-badge">${r.reservation_time}</div>
+                <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--stone-light);margin-top:1px;">
+                  ${r.service_type === 'midi' ? '☀️ Midi' : '🌙 Soir'}
+                </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Row 3: Notes if any -->
-          ${r.display_notes ? `
-            <div style="padding:0.65rem 0.95rem;background:#faf4ed;border-left:3.5px solid var(--accent);border-radius:0.5rem;font-size:0.82rem;color:var(--stone-mid);display:flex;align-items:flex-start;gap:8px;line-height:1.45;">
-              <span style="color:var(--accent);font-size:0.95rem;">📌</span>
-              <span>${r.display_notes}</span>
-            </div>
-          ` : ''}
+              <!-- Main: Guest Name + Party + Table + Note -->
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:2px;">
+                  <span class="res-name" style="font-size:1.05rem;font-weight:700;color:var(--stone);">${r.customer_name}</span>
+                  <span class="pill pill-guest">${r.guests_count} pers.</span>
+                  
+                  <!-- Table Selector Pill -->
+                  <select class="pill-table-select" onchange="updateTable('${r.id}', this.value)" title="Assigner une table">
+                    ${tableOptions}
+                  </select>
 
-          <!-- Row 4: Action Footer (Status transitions + Delete) -->
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.6rem;padding-top:0.4rem;">
-            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-              <button class="act-btn act-confirm ${r.status === 'confirmed' ? 'on' : ''}" onclick="updateStatus('${r.id}', 'confirmed')">
-                ${r.status === 'confirmed' ? '✓ Confirmé' : 'Confirmer'}
-              </button>
-              <button class="act-btn act-seat ${r.status === 'seated' ? 'on' : ''}" onclick="updateStatus('${r.id}', 'seated')">
-                ${r.status === 'seated' ? '✓ Installé' : 'Installer'}
-              </button>
-              <button class="act-btn act-cancel ${r.status === 'cancelled' ? 'on' : ''}" onclick="updateStatus('${r.id}', 'cancelled')">
-                Annuler
-              </button>
+                  <span class="pill" style="background:transparent;color:var(--stone-light);font-size:0.68rem;padding:0;">${zoneLabel}</span>
+                </div>
+
+                <!-- Notes / Dietary requirements if present -->
+                ${r.display_notes ? `
+                  <div style="display:inline-flex;align-items:center;gap:5px;font-size:0.75rem;color:#b45309;background:rgba(217,119,6,0.1);padding:1px 8px;border-radius:6px;margin-top:2px;">
+                    <span>📌</span>
+                    <span style="font-weight:500;">${r.display_notes}</span>
+                  </div>
+                ` : ''}
+              </div>
+
             </div>
 
-            <button class="act-btn-delete" onclick="deleteReservation('${r.id}')" title="Supprimer définitivement la réservation">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-              <span>Supprimer</span>
-            </button>
-          </div>
-        `;
-        list.appendChild(card);
-      });
+            <!-- Right: Actions + Status Selector -->
+            <div class="res-row-right" style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+              ${contactHtml}
+
+              <!-- 1-Tap Status Dropdown Pill -->
+              <select class="status-select ${r.status}" onchange="updateStatus('${r.id}', this.value)" title="Changer le statut">
+                <option value="pending"   ${r.status === 'pending' ? 'selected' : ''}>🟡 En attente</option>
+                <option value="confirmed" ${r.status === 'confirmed' ? 'selected' : ''}>🔵 Confirmé</option>
+                <option value="seated"    ${r.status === 'seated' ? 'selected' : ''}>🟢 À table</option>
+                <option value="cancelled" ${r.status === 'cancelled' ? 'selected' : ''}>⚪ Annulé</option>
+              </select>
+
+              ${quickSeatBtn}
+
+              <!-- Discreet Delete -->
+              <button class="btn-action-icon trash" onclick="deleteReservation('${r.id}')" title="Supprimer définitivement">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      };
+
+      if (activeFilter === 'all') {
+        const midiItems = filtered.filter(r => r.service_type === 'midi');
+        const soirItems = filtered.filter(r => r.service_type === 'soir');
+        renderGroup('midi', 'Service du Midi', '☀️', midiItems);
+        renderGroup('soir', 'Service du Soir', '🌙', soirItems);
+      } else if (activeFilter === 'midi') {
+        renderGroup('midi', 'Service du Midi', '☀️', filtered);
+      } else {
+        renderGroup('soir', 'Service du Soir', '🌙', filtered);
+      }
     }
 
     // ── PERMANENT DELETE ACTION ──
     async function deleteReservation(id) {
       const res = allReservations.find(r => r.id === id);
       const name = res ? res.customer_name : 'cette réservation';
-      if (!confirm(`Supprimer définitivement la réservation de « ${name} » ? Cette action la retirera de la liste.`)) {
+      if (!confirm(`Supprimer définitivement la réservation de « ${name} » ?`)) {
         return;
       }
 
-      // Remove from active state
       allReservations = allReservations.filter(r => r.id !== id);
-      // Persist deleted ID
       addDeletedId(id);
 
-      // Attempt Supabase deletion
       if (sbClient) {
         try {
           await sbClient.from('reservations').delete().eq('id', id);
@@ -982,26 +1147,27 @@
 
       if (sbClient) {
         try {
-          // Attempt column update
           const { error } = await sbClient.from('reservations').update({ table_number: newTable }).eq('id', id);
           if (error && error.code === 'PGRST204') {
-            // Fallback: encode table in notes column
             const res = allReservations[idx];
             const updatedNotes = encodeMetadata(res.display_notes, { table: newTable, zone: res.seating_zone });
             await sbClient.from('reservations').update({ notes: updatedNotes }).eq('id', id);
           }
         } catch(e) { console.warn(e); }
       }
-      showToast(newTable ? `Table assignée : ${newTable}` : 'Table désassignée');
+      showToast(newTable ? `Table assignée : ${newTable}` : 'Table retirée');
     }
 
     function setFilter(f) {
       activeFilter = f;
-      ['all','midi','soir'].forEach(k => document.getElementById('tab-' + k).classList.toggle('active', k === f));
+      ['all','midi','soir'].forEach(k => {
+        const el = document.getElementById('tab-' + k);
+        if (el) el.classList.toggle('active', k === f);
+      });
       renderList();
     }
 
-    // ── MANUAL BOOKING ──
+    // ── MANUAL BOOKING MODAL ──
     function openManualModal() {
       document.getElementById('mDate').value = activeDate || toLocalISO(new Date());
       document.getElementById('manualModal').classList.add('open');
@@ -1085,7 +1251,7 @@
       const el = document.getElementById('toast');
       document.getElementById('toastMsg').textContent = msg;
       el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 3500);
+      setTimeout(() => el.classList.remove('show'), 3000);
     }
 
     function playChime() {
