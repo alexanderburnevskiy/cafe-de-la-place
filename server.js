@@ -28,8 +28,21 @@ function handler(req, res) {
   else if (reqPath === '/dashboard') reqPath = '/admin.html';
   else if (reqPath === '/favicon.ico') reqPath = '/assets/logo.png';
 
+  if (reqPath === '/debug-paths') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    let dirFiles = [], cwdFiles = [], assetsInDir = false, assetsInCwd = false;
+    try { dirFiles = fs.readdirSync(__dirname); } catch(e) { dirFiles = [e.message]; }
+    try { cwdFiles = fs.readdirSync(process.cwd()); } catch(e) { cwdFiles = [e.message]; }
+    try { assetsInDir = fs.existsSync(path.join(__dirname, 'assets')); } catch(e) {}
+    try { assetsInCwd = fs.existsSync(path.join(process.cwd(), 'assets')); } catch(e) {}
+    return res.end(JSON.stringify({ __dirname, cwd: process.cwd(), dirFiles, cwdFiles, assetsInDir, assetsInCwd }, null, 2));
+  }
+
   let cleanPath = reqPath.replace(/^\/+/, '');
   let filePath = path.join(__dirname, cleanPath);
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(process.cwd(), cleanPath);
+  }
 
   if (!path.extname(filePath) && fs.existsSync(filePath + '.html')) {
     filePath += '.html';
@@ -41,7 +54,7 @@ function handler(req, res) {
     if (err) {
       if (err.code === 'ENOENT') {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('404 Not Found');
+        res.end('404 Not Found: ' + cleanPath + ' (searched: ' + filePath + ')');
       } else {
         res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
         res.end('500 Internal Server Error');
