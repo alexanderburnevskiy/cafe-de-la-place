@@ -1,11 +1,6 @@
 {
-  "version": 2,
+  "outputDirectory": "public",
   "cleanUrls": true,
-  "functions": {
-    "server.js": {
-      "includeFiles": "assets/**,*.html,config.js,widget.js"
-    }
-  },
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/widget", "destination": "/client-widget.html" }

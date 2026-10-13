@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Exemple : Intégration sur le site existant du client</title>
+  <style>
+    body { font-family: sans-serif; background: #f3f4f6; padding: 40px; text-align: center; }
+    .fake-site { background: #fff; max-width: 600px; margin: 0 auto; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .btn-custom { background: #92400e; color: #fff; padding: 14px 28px; border-radius: 9999px; font-weight: bold; border: none; cursor: pointer; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+  <div class="fake-site">
+    <h2>Le site actuel du restaurant (WordPress, Wix, etc.)</h2>
+    <p>Pour intégrer le système de réservation, il suffit d'ajouter ces 2 lignes de code :</p>
+    
+    <!-- 1. La touche de réservation -->
+    <button class="btn-custom" data-cdp-booking>Réserver une table</button>
+  </div>
+
+  <!-- 2. Le script autonome du widget -->
+  <script src="widget.js" async></script>
+
+</body>
+</html>

@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Café de la Place — Saint-Légier</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <meta name="description" content="Café de la Place à Saint-Légier-La Chiésaz. Bistronomie vaudoise, terrasse ombragée sous les marronniers, cuisine de saison et accueil chaleureux." />
+  <!-- OpenGraph — rich preview on WhatsApp, Telegram, iMessage, Twitter -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.cafedelaplace.ch" />
+  <meta property="og:title" content="Café de la Place — Saint-Légier" />
+  <meta property="og:description" content="Bistronomie vaudoise sur la place historique de Saint-Légier. Terrasse ombragée, cuisine de saison, réservation en ligne." />
+  <meta property="og:image" content="https://www.cafedelaplace.ch/assets/img_1701.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Café de la Place — Saint-Légier" />
+  <meta name="twitter:description" content="Bistronomie vaudoise, terrasse ombragée, cuisine de saison." />
+  <meta name="twitter:image" content="https://www.cafedelaplace.ch/assets/img_1701.jpg" />
+  <link rel="stylesheet" href="assets/style.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #f5f0e8;
+      --cream-dark: #ede6d6;
+      --stone: #2c2520;
+      --stone-mid: #5c4f44;
+      --stone-light: #9c8c7c;
+      --accent: #8b5c2a;
+      --accent-dark: #6b4420;
+      --white: #fdfbf7;
+    }
+    html { background: var(--white); }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--stone);
+      background: var(--white);
+      -webkit-font-smoothing: antialiased;
+    }
+    .serif { font-family: 'DM Serif Display', Georgia, serif; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--cream); }
+    ::-webkit-scrollbar-thumb { background: var(--stone-light); border-radius: 3px; }
+
+    /* ── NAV ── */
+    .nav-link {
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--stone-mid);
+      transition: color 0.2s ease, opacity 0.2s ease; text-decoration: none;
+      line-height: 1; display: inline-flex; align-items: center; height: 32px;
+    }
+    .nav-link:hover { color: var(--stone); }
+
+    /* ── HERO ── */
+    .hero-bg {
+      background: var(--cream);
+      min-height: 100svh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 768px) {
+      .hero-bg { grid-template-columns: 1fr; min-height: auto; }
+      .hero-img-col { height: 60vw; min-height: 260px; }
+    }
+
+    /* ── PHOTO GRID ── */
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 3px;
+    }
+    .photo-grid .tall { grid-row: span 2; }
+
+    /* ── MENU TABLE ── */
+    .menu-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 0.9rem 0; border-bottom: 1px solid rgba(92,79,68,0.12);
+    }
+    .menu-row:last-child { border-bottom: none; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(28, 22, 18, 0.68);
+      backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.16,1,0.3,1);
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: var(--white); border-radius: 1.5rem;
+      max-width: 460px; width: 94%;
+      max-height: 92svh; overflow-y: auto;
+      transform: scale(0.94) translateY(24px);
+      transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 32px 80px rgba(28,22,18,0.28);
+    }
+    .modal-overlay.open .modal-card { transform: scale(1) translateY(0); }
+
+    /* ── WIZARD STEPS ── */
+    .step { display: none; }
+    .step.active { display: block; animation: fadeSlide 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── PROGRESS BAR ── */
+    .prog-bar {
+      height: 2px; flex: 1; border-radius: 2px;
+      background: rgba(92,79,68,0.15);
+      transition: background 0.4s ease;
+    }
+    .prog-bar.done { background: var(--stone); }
+
+    /* ── GUEST TILES ── */
+    .num-tile {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: 0.75rem; border: 1.5px solid rgba(92,79,68,0.2);
+      background: var(--white); font-size: 1.25rem; font-weight: 500;
+      color: var(--stone); cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+    }
+    .num-tile:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,92,42,0.12); }
+    .num-tile.selected { background: var(--stone); border-color: var(--stone); color: var(--white); transform: scale(1.04); }
+    .num-tile.col-span-4 { aspect-ratio: auto; min-height: 3rem; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.02em; }
+
+    /* ── SUGGESTION CARDS ── */
+    .sugg-card {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 0.875rem 1rem; border-radius: 0.875rem;
+      border: 1.5px solid rgba(92,79,68,0.18);
+      background: var(--cream); cursor: pointer; text-align: left;
+      transition: all 0.18s cubic-bezier(0.16,1,0.3,1);
+    }
+    .sugg-card:hover { border-color: var(--stone); background: var(--cream-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(28,22,18,0.08); }
+    .sugg-card.primary-sugg { border-color: rgba(139,92,42,0.35); background: #f7ede0; }
+    .sugg-card.primary-sugg:hover { border-color: var(--accent); background: #f0e0ca; }
+
+    /* ── ZONE SELECTION CARDS ── */
+    .zone-card {
+      padding: 0.65rem; border-radius: 0.85rem; border: 1.5px solid rgba(92,79,68,0.2);
+      background: var(--white); cursor: pointer; transition: all 0.18s ease; text-align: left;
+    }
+    .zone-card:hover { border-color: var(--stone); transform: translateY(-1px); }
+    .zone-card.selected { border-color: var(--accent); background: #fdf8f2; box-shadow: 0 4px 14px rgba(139,92,42,0.12); }
+
+    /* ── CALENDAR ── */
+    .day-cell {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: 0.5rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;
+      border: 1.5px solid transparent; transition: all 0.15s ease; color: var(--stone);
+    }
+    .day-cell:not(.disabled):not(.past):hover { background: var(--cream); border-color: var(--stone-light); }
+    .day-cell.selected { background: var(--stone); color: var(--white); border-color: var(--stone); }
+    .day-cell.disabled, .day-cell.past { color: rgba(92,79,68,0.25); cursor: not-allowed; }
+    .day-cell.today { border-color: var(--accent); font-weight: 700; }
+
+    /* ── SERVICE TABS ── */
+    .svc-tab {
+      flex: 1; padding: 0.875rem; border-radius: 0.75rem;
+      border: 1.5px solid rgba(92,79,68,0.2);
+      font-size: 0.875rem; font-weight: 600; letter-spacing: 0.02em; cursor: pointer;
+      text-align: center; background: var(--white); color: var(--stone-mid);
+      transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+    }
+    .svc-tab:hover { border-color: var(--stone); color: var(--stone); }
+    .svc-tab.selected { background: var(--stone); border-color: var(--stone); color: var(--white); }
+
+    /* ── TIME CHIPS ── */
+    .chip {
+      padding: 0.55rem 1rem; border-radius: 9999px; font-size: 0.875rem;
+      font-weight: 500; cursor: pointer; border: 1.5px solid rgba(92,79,68,0.2);
+      background: var(--white); color: var(--stone-mid); transition: all 0.18s ease;
+    }
+    .chip:hover { border-color: var(--stone); color: var(--stone); }
+    .chip.selected { background: var(--stone); border-color: var(--stone); color: var(--white); }
+
+    /* ── INPUTS ── */
+    .field-wrap { position: relative; }
+    .field-input {
+      width: 100%; padding: 0.875rem 1rem; border-radius: 0.75rem;
+      border: 1.5px solid rgba(92,79,68,0.2); font-size: 0.9rem;
+      font-family: inherit; color: var(--stone); background: var(--white);
+      outline: none; transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .field-input:focus { border-color: var(--stone); box-shadow: 0 0 0 3px rgba(44,37,32,0.08); }
+    .field-input.error { border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192,57,43,0.08); }
+    .field-input.valid { border-color: #2d6a4f; }
+    .field-label { font-size: 0.75rem; font-weight: 600; color: var(--stone-mid); margin-bottom: 0.4rem; display: block; letter-spacing: 0.04em; text-transform: uppercase; }
+    .field-error { font-size: 0.7rem; color: #c0392b; margin-top: 0.3rem; display: none; }
+    .field-error.show { display: block; }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.875rem 1.75rem; background: var(--stone); color: var(--white);
+      border-radius: 9999px; font-weight: 600; font-size: 0.875rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      border: none; cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 2px 16px rgba(44,37,32,0.15);
+    }
+    .btn-primary:hover { background: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(139,92,42,0.22); }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { background: rgba(92,79,68,0.3); cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-ghost-sm {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--stone-light); background: none; border: none; cursor: pointer;
+      transition: color 0.18s; padding: 0;
+    }
+    .btn-ghost-sm:hover { color: var(--stone); }
+
+    /* ── DIVIDER ── */
+    .or-divider {
+      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--stone-light);
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(92,79,68,0.18);
+    }
+
+    /* ── FOOTER ── */
+    .footer-link { color: var(--stone-light); font-size: 0.8rem; text-decoration: none; transition: color 0.2s; }
+    .footer-link:hover { color: var(--white); }
+  </style>
+</head>
+<body>
+
+  <!-- ════ NAV ════ -->
+  <header class="sticky top-0 z-50 bg-[var(--white)]/95 backdrop-blur-md border-b border-[rgba(92,79,68,0.12)]">
+    <div class="max-w-7xl mx-auto px-6 sm:px-10 h-16 flex items-center justify-between">
+      <a href="#" class="inline-flex items-center gap-3 no-underline group h-8">
+        <img src="assets/logo.png" alt="Café de la Place" class="h-7 w-auto object-contain transition-opacity group-hover:opacity-80" style="filter: brightness(0); opacity: 0.88; display: block;" />
+        <span class="serif text-xl tracking-tight text-[var(--stone)] leading-none inline-flex items-center h-full pt-[2px]">Café de la Place</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-9">
+        <a href="#spirit" class="nav-link" data-fr="L'Esprit" data-en="Our Story">L'Esprit</a>
+        <a href="#menu" class="nav-link" data-fr="La Carte" data-en="The Menu">La Carte</a>
+        <a href="#horaires" class="nav-link" data-fr="Horaires" data-en="Hours">Horaires</a>
+        <a href="admin.html" class="nav-link opacity-60 hover:opacity-100 flex items-center gap-1.5" title="Accès espace personnel">
+          <span>Staff</span>
+          <span class="text-[10px]">🔒</span>
+        </a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <!-- Language Toggle -->
+        <button id="langToggle" onclick="toggleLang()" style="font-size:0.7rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--stone-light);background:none;border:1.5px solid rgba(92,79,68,0.18);padding:0.25rem 0.65rem;border-radius:9999px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:4px;" onmouseover="this.style.borderColor='var(--stone)';this.style.color='var(--stone)'" onmouseout="this.style.borderColor='rgba(92,79,68,0.18)';this.style.color='var(--stone-light)'">
+          <span id="langLabel">EN</span>
+        </button>
+        <button onclick="openBooking()" class="btn-primary text-xs py-2.5 px-5" data-fr="Réserver" data-en="Reserve">
+          Réserver
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ════ HERO ════ -->
+  <section class="hero-bg">
+    <!-- Left: text -->
+    <div class="flex flex-col justify-between p-10 sm:p-16 md:p-20">
+      <div>
+        <p class="nav-link mb-6">Saint-Légier · Vaud · Suisse</p>
+        <h1 class="serif text-[clamp(2.8rem,6vw,5.5rem)] leading-[1.05] text-[var(--stone)] mb-8">
+          <span data-fr="Un lieu où" data-en="A place">Un lieu où</span><br/>
+          <em><span data-fr="l'on prend<br/>le temps." data-en="to slow<br/>down.">l'on prend<br/>
+          le temps.</span></em>
+        </h1>
+        <p class="text-[var(--stone-mid)] text-base font-light leading-relaxed max-w-sm mb-10" data-fr="Bistronomie vaudoise, terrasse ombragée sous les marronniers, cuisine authentique et créative. Du mardi au samedi, midi et soir." data-en="Vaudois bistronomie, a shaded terrace under the chestnut trees, authentic and creative cuisine. Tuesday to Saturday, lunch and dinner.">
+          Bistronomie vaudoise, terrasse ombragée sous les marronniers, cuisine authentique et créative. Du mardi au samedi, midi et soir.
+        </p>
+        <button onclick="openBooking()" class="btn-primary" data-fr="Réserver une table" data-en="Book a table">
+          Réserver une table
+        </button>
+      </div>
+      <div class="mt-16 flex items-center gap-8 text-[var(--stone-mid)]">
+        <div>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]" data-fr="Midi" data-en="Lunch">Midi</p>
+          <p class="font-medium text-sm">11h45 – 13h00</p>
+        </div>
+        <div class="w-px h-8 bg-[rgba(92,79,68,0.2)]"></div>
+        <div>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]" data-fr="Soir" data-en="Dinner">Soir</p>
+          <p class="font-medium text-sm">18h30 – 20h30</p>
+        </div>
+        <div class="w-px h-8 bg-[rgba(92,79,68,0.2)]"></div>
+        <div>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase mb-1 text-[var(--stone-light)]" data-fr="Jours" data-en="Days">Jours</p>
+          <p class="font-medium text-sm" data-fr="Mar – Sam" data-en="Tue – Sat">Mar – Sam</p>
+        </div>
+      </div>
+    </div>
+    <!-- Right: Real photo of signature dish -->
+    <div class="hero-img-col relative overflow-hidden" style="min-height: 55vmin;">
+      <img src="assets/img_1701.jpg" alt="Agneau de Saint-Légier rôti - Café de la Place" class="w-full h-full object-cover" />
+      <div class="absolute inset-0 bg-gradient-to-t from-[var(--stone)]/30 to-transparent"></div>
+    </div>
+  </section>
+
+  <!-- ════ SPIRIT ════ -->
+  <section id="spirit" class="py-24 sm:py-32 px-6 sm:px-10 max-w-7xl mx-auto">
+    <div class="grid md:grid-cols-2 gap-16 items-center">
+      <div>
+        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="Notre philosophie" data-en="Our philosophy">Notre philosophie</p>
+        <h2 class="serif text-[clamp(2rem,4vw,3.5rem)] leading-tight text-[var(--stone)] mb-6">
+          <span data-fr="La cuisine" data-en="Cuisine">La cuisine</span><br/><span data-fr="comme art" data-en="as an art">comme art</span><br/><span data-fr="de recevoir." data-en="of hospitality.">de recevoir.</span>
+        </h2>
+        <p class="text-[var(--stone-mid)] leading-relaxed font-light mb-4 max-w-sm" data-fr="Niché sur la place historique de Saint-Légier-La Chiésaz, le Café de la Place vous émerveille par sa cuisine authentique et créative ainsi que ses mets du terroir vaudois." data-en="Nestled on the historic square of Saint-Légier-La Chiésaz, Café de la Place enchants with its authentic, creative cooking and the finest produce from the Vaudois terroir.">
+          Niché sur la place historique de Saint-Légier-La Chiésaz, le Café de la Place vous émerveille par sa cuisine authentique et créative ainsi que ses mets du terroir vaudois.
+        </p>
+        <p class="text-[var(--stone-mid)] leading-relaxed font-light max-w-sm" data-fr="À l'ombre des marronniers en terrasse ou dans l'ambiance chaleureuse de la salle : Marisa et son équipe se réjouissent de vous accueillir." data-en="Under the shade of the chestnut trees on the terrace or in the warm ambiance of the dining room: Marisa and her team look forward to welcoming you.">
+          À l'ombre des marronniers en terrasse ou dans l'ambiance chaleureuse de la salle : Marisa et son équipe se réjouissent de vous accueillir.
+        </p>
+      </div>
+      <!-- Real photo grid -->
+      <div class="photo-grid h-[420px] sm:h-[520px] rounded-2xl overflow-hidden shadow-sm">
+        <div class="tall overflow-hidden">
+          <img src="assets/img_0386.jpg" alt="Marisa et l'accueil au Café de la Place" class="w-full h-full object-cover object-[center_20%]" />
+        </div>
+        <div class="overflow-hidden">
+          <img src="assets/img_0066.jpg" alt="Création bistronomique et dressage minute" class="w-full h-full object-cover" />
+        </div>
+        <div class="overflow-hidden">
+          <img src="assets/img_0110.jpg" alt="Dessert maison aux framboises fraîches" class="w-full h-full object-cover" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ MENU ════ -->
+  <section id="menu" class="bg-[var(--cream)] py-24 sm:py-32">
+    <div class="max-w-7xl mx-auto px-6 sm:px-10">
+      <div class="grid md:grid-cols-[1fr_2fr] gap-16">
+        <div>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="La Carte" data-en="The Menu">La Carte</p>
+          <h2 class="serif text-[clamp(1.8rem,3.5vw,3rem)] leading-tight text-[var(--stone)] mb-6">
+            <span data-fr="Les" data-en="Our">Les</span><br/><span data-fr="Incontournables" data-en="Signatures">Incontournables</span>
+          </h2>
+          <p class="text-[var(--stone-mid)] text-sm font-light leading-relaxed" data-fr="Spécialités de saison, agneau de Saint-Légier, poissons du Léman et accords avec les plus beaux crus des coteaux du Lavaux." data-en="Seasonal specialities, Saint-Légier lamb, Lake Geneva fish and pairings with the finest vintages from the Lavaux slopes.">
+            Spécialités de saison, agneau de Saint-Légier, poissons du Léman et accords avec les plus beaux crus des coteaux du Lavaux.
+          </p>
+        </div>
+        <div>
+          <!-- Midi -->
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4">Midi</p>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Plat du Jour du Chef</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 22</span>
+          </div>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Filets de Perche du Léman meunière</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 28</span>
+          </div>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Entrecôte de bœuf rassie sur os, frites maison</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 34</span>
+          </div>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Tartare de thon frais assaisonné minute</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 24</span>
+          </div>
+          <!-- Soir -->
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mt-8 mb-4">Soir</p>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Menu Dégustation (4 services)</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 78</span>
+          </div>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Agneau de Saint-Légier rôti au romarin</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 44</span>
+          </div>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Risotto aux bolets et truffe d'été</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 36</span>
+          </div>
+          <div class="menu-row">
+            <span class="font-medium text-[var(--stone)]">Omble chevalier meunière, beurre noisette</span>
+            <span class="text-[var(--stone-mid)] text-sm font-light">CHF 39</span>
+          </div>
+          <p class="text-[var(--stone-light)] text-xs font-light mt-4 italic">Carte de saison · Ardoise des suggestions renouvelée chaque semaine</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ FULL-WIDTH ATMOSPHERIC BAND ════ -->
+  <section class="h-[38vmin] max-h-[340px] overflow-hidden relative">
+    <img src="assets/salle.jpg" alt="Ambiance chaleureuse du Café de la Place" class="w-full h-full object-cover object-[center_35%]" />
+    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+      <p class="serif text-white text-xl sm:text-2xl md:text-3xl text-center px-6 drop-shadow-md font-light italic max-w-2xl leading-relaxed">
+        « Une table d'exception, entre terroir vaudois et créativité. »
+      </p>
+    </div>
+  </section>
+
+  <!-- ════ HORAIRES & CONTACT ════ -->
+  <section id="horaires" class="py-24 sm:py-32 px-6 sm:px-10 max-w-7xl mx-auto">
+    <div class="grid md:grid-cols-3 gap-16">
+      <!-- Hours -->
+      <div>
+        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="Horaires" data-en="Opening Hours">Horaires</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-6" data-fr="Ouvert du<br/>Mardi au Samedi" data-en="Open<br/>Tuesday to Saturday">Ouvert du<br/>Mardi au Samedi</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between text-[var(--stone-mid)]">
+            <span data-fr="Dimanche & Lundi" data-en="Sunday & Monday">Dimanche & Lundi</span>
+            <span class="font-medium text-[rgba(92,79,68,0.4)]" data-fr="Fermé" data-en="Closed">Fermé</span>
+          </div>
+          <div class="flex justify-between text-[var(--stone-mid)]">
+            <span data-fr="Service du Midi" data-en="Lunch service">Service du Midi</span>
+            <span class="font-medium text-[var(--stone)]">11h45 – 13h00</span>
+          </div>
+          <div class="flex justify-between text-[var(--stone-mid)]">
+            <span data-fr="Service du Soir" data-en="Dinner service">Service du Soir</span>
+            <span class="font-medium text-[var(--stone)]">18h30 – 20h30</span>
+          </div>
+        </div>
+      </div>
+      <!-- Contact -->
+      <div>
+        <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-4" data-fr="Contact" data-en="Contact">Contact</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-6" data-fr="Nous trouver" data-en="Find us">Nous trouver</h3>
+        <div class="space-y-3 text-sm text-[var(--stone-mid)]">
+          <p>Place du Village<br/>1806 Saint-Légier-La Chiésaz</p>
+          <p><a href="tel:0219431037" class="text-[var(--stone)] font-medium hover:text-[var(--accent)] transition-colors">021 943 10 37</a></p>
+          <p><a href="mailto:info@cafedelaplace.ch" class="text-[var(--stone)] font-medium hover:text-[var(--accent)] transition-colors">info@cafedelaplace.ch</a></p>
+        </div>
+      </div>
+      <!-- CTA -->
+      <div class="bg-[var(--cream)] rounded-2xl p-8 flex flex-col justify-between">
+        <div>
+          <p class="text-[0.65rem] font-semibold tracking-widest uppercase text-[var(--stone-light)] mb-3" data-fr="Réservation" data-en="Reservation">Réservation</p>
+          <h3 class="serif text-2xl text-[var(--stone)] mb-4" data-fr="Votre table vous attend." data-en="Your table awaits.">Votre table vous attend.</h3>
+          <p class="text-[var(--stone-mid)] text-sm font-light leading-relaxed" data-fr="Confirmation en ligne instantanée pour le midi ou le soir." data-en="Instant online confirmation for lunch or dinner.">Confirmation en ligne instantanée pour le midi ou le soir.</p>
+        </div>
+        <button onclick="openBooking()" class="btn-primary mt-8 w-full justify-center" data-fr="Réserver maintenant" data-en="Book now">
+          Réserver maintenant
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ FOOTER ════ -->
+  <footer class="bg-[var(--stone)] py-10 px-6 sm:px-10">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <img src="assets/logo.png" alt="Café de la Place" class="h-8 w-auto brightness-200" />
+        <span class="serif text-[var(--white)] text-lg">Café de la Place</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="admin.html" class="footer-link">Espace Staff 🔒</a>
+        <a href="tel:0219431037" class="footer-link">021 943 10 37</a>
+        <span class="text-[var(--stone-light)] text-xs">© 2026 Café de la Place · Saint-Légier</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ════════════════ BOOKING MODAL ════════════════ -->
+  <div class="modal-overlay" id="bookingModal">
+    <div class="modal-card p-7 sm:p-8 relative" style="scrollbar-width:thin;">
+
+      <!-- Close -->
+      <button onclick="closeBooking()" class="absolute top-5 right-5 text-[var(--stone-light)] hover:text-[var(--stone)] transition-colors" style="background:none;border:none;cursor:pointer;padding:4px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <!-- Logo in modal -->
+      <div class="flex items-center gap-2.5 mb-6">
+        <img src="assets/logo.png" alt="Café de la Place" class="h-8 w-auto object-contain" />
+        <span class="serif text-base text-[var(--stone)]">Café de la Place</span>
+      </div>
+
+      <!-- Progress bars -->
+      <div class="flex gap-1 mb-7" id="progressBars">
+        <div class="prog-bar done" id="bar-1"></div>
+        <div class="prog-bar" id="bar-2"></div>
+        <div class="prog-bar" id="bar-3"></div>
+        <div class="prog-bar" id="bar-4"></div>
+      </div>
+
+      <!-- ─── STEP 1 : Personnes ─── -->
+      <div class="step active" id="step-1">
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 1 / 4</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-6">Combien de personnes ?</h3>
+        <div class="grid grid-cols-4 gap-2.5" id="guestGrid"></div>
+      </div>
+
+      <!-- ─── STEP 2 : Date ─── -->
+      <div class="step" id="step-2">
+        <button class="btn-ghost-sm mb-4" onclick="goStep(1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Retour
+        </button>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 2 / 4</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-5">Quelle date ?</h3>
+
+        <!-- Smart suggestions -->
+        <div id="quickSuggestions" class="mb-4 space-y-2"></div>
+
+        <div class="or-divider my-4">ou choisir dans le calendrier</div>
+
+        <!-- Calendar -->
+        <div class="flex items-center justify-between mb-3">
+          <button onclick="shiftMonth(-1)" style="background:none;border:1.5px solid rgba(92,79,68,0.2);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--stone-mid);">‹</button>
+          <span class="font-semibold text-sm text-[var(--stone)]" id="calTitle"></span>
+          <button onclick="shiftMonth(1)" style="background:none;border:1.5px solid rgba(92,79,68,0.2);border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;color:var(--stone-mid);">›</button>
+        </div>
+        <div class="grid grid-cols-7 gap-0.5 text-center mb-2">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Lu</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Ma</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Me</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Je</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Ve</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Sa</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--stone-light)] py-1">Di</div>
+        </div>
+        <div id="calGrid" class="grid grid-cols-7 gap-0.5 mb-3"></div>
+        <p class="text-[0.7rem] text-[var(--stone-light)] text-center tracking-wide">Fermé le lundi et le dimanche</p>
+      </div>
+
+      <!-- ─── STEP 3 : Service, Heure & Zone ─── -->
+      <div class="step" id="step-3">
+        <button class="btn-ghost-sm mb-4" onclick="goStep(2)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Retour
+        </button>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 3 / 4</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-5">Quel créneau ?</h3>
+        
+        <!-- Service Tabs -->
+        <div class="flex gap-2.5 mb-4">
+          <button class="svc-tab" id="tabMidi" onclick="selectService('midi')">Midi (11h45 – 13h00)</button>
+          <button class="svc-tab" id="tabSoir" onclick="selectService('soir')">Soir (18h30 – 20h30)</button>
+        </div>
+        
+        <div id="timeChips" class="flex flex-wrap gap-2 mb-6"></div>
+
+        <!-- Seating Zone Selection with Photo Previews -->
+        <div class="pt-4 border-t border-[rgba(92,79,68,0.14)]">
+          <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-2.5">Zone souhaitée</p>
+          <div class="grid grid-cols-2 gap-3" id="zoneSelector">
+            
+            <button type="button" class="zone-card selected" id="zoneBtnInterieur" onclick="selectZone('interieur')">
+              <div class="h-16 w-full rounded-lg overflow-hidden mb-2 relative">
+                <img src="assets/salle.jpg" alt="Salle" class="w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-black/15"></div>
+              </div>
+              <span class="font-semibold text-xs text-[var(--stone)] block">Intérieur (Salle)</span>
+              <span class="text-[10px] text-[var(--stone-light)] block">Ambiance bistrot feutrée</span>
+            </button>
+
+            <button type="button" class="zone-card" id="zoneBtnTerrasse" onclick="selectZone('terrasse')">
+              <div class="h-16 w-full rounded-lg overflow-hidden mb-2 relative">
+                <img src="assets/terrasse.jpg" alt="Terrasse" class="w-full h-full object-cover" />
+                <div class="absolute inset-0 bg-black/15"></div>
+              </div>
+              <span class="font-semibold text-xs text-[var(--stone)] block">Terrasse ombragée</span>
+              <span class="text-[10px] text-[var(--stone-light)] block">Sous les marronniers</span>
+            </button>
+
+          </div>
+        </div>
+
+        <button onclick="goStep(4)" class="btn-primary w-full mt-6 justify-center">
+          Continuer vers vos coordonnées ›
+        </button>
+      </div>
+
+      <!-- ─── STEP 4 : Coordonnées ─── -->
+      <div class="step" id="step-4">
+        <button class="btn-ghost-sm mb-4" onclick="goStep(3)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Retour
+        </button>
+        <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-1">Étape 4 / 4</p>
+        <h3 class="serif text-2xl text-[var(--stone)] mb-5">Vos coordonnées</h3>
+
+        <div class="space-y-4">
+          <!-- Nom -->
+          <div>
+            <label class="field-label" for="fName">Nom et prénom *</label>
+            <div class="field-wrap">
+              <input class="field-input" id="fName" type="text" placeholder="Jean Dupont" autocomplete="name" />
+            </div>
+            <p class="field-error" id="errName">Veuillez indiquer votre prénom et nom.</p>
+          </div>
+
+          <!-- Téléphone -->
+          <div>
+            <label class="field-label" for="fPhone">Téléphone <span id="phoneSuffix" class="font-light normal-case tracking-normal">(requis si pas d'e-mail)</span></label>
+            <div class="field-wrap">
+              <input class="field-input" id="fPhone" type="tel" placeholder="+41 79 123 45 67" autocomplete="tel" />
+            </div>
+            <p class="field-error" id="errPhone">Format invalide (+41 / 07x / 02x). Ex : +41 79 123 45 67</p>
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="field-label" for="fEmail">E-mail <span id="emailSuffix" class="font-light normal-case tracking-normal">(requis si pas de téléphone)</span></label>
+            <div class="field-wrap">
+              <input class="field-input" id="fEmail" type="email" placeholder="jean.dupont@example.ch" autocomplete="email" />
+            </div>
+            <p class="field-error" id="errEmail">Adresse e-mail invalide.</p>
+          </div>
+
+          <!-- Remarques -->
+          <div>
+            <label class="field-label" for="fNotes" style="text-transform:uppercase;letter-spacing:0.04em;">Remarques <span class="font-light normal-case tracking-normal">(optionnel)</span></label>
+            <input class="field-input" id="fNotes" type="text" placeholder="Allergie aux fruits de mer, chaise haute..." />
+          </div>
+        </div>
+
+        <!-- Contact requirement notice -->
+        <p class="text-[0.7rem] text-[var(--stone-light)] mt-3 italic">* Au moins un moyen de contact est requis (téléphone ou e-mail).</p>
+
+        <!-- Summary box -->
+        <div id="summaryBox" class="mt-5 p-4 rounded-xl text-sm" style="background:var(--cream); border:1px solid rgba(92,79,68,0.15);"></div>
+
+        <div class="mt-5">
+          <button class="btn-primary w-full justify-center" id="btnSubmit" onclick="submitReservation()">
+            Confirmer la réservation
+          </button>
+          <p id="submitError" class="text-red-700 text-xs text-center mt-3 font-medium hidden"></p>
+        </div>
+      </div>
+
+      <!-- ─── STEP 5 : Confirmation ─── -->
+      <div class="step text-center py-4" id="step-5">
+        <!-- Warm Photo of Dish/Restaurant -->
+        <div class="w-full h-36 rounded-xl overflow-hidden mb-5 shadow-sm relative">
+          <img src="assets/plat.jpg" alt="Café de la Place" class="w-full h-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-[var(--stone)]/60 to-transparent flex items-end p-4">
+            <span class="text-white text-xs font-medium">Bistronomie Vaudoise · Saint-Légier</span>
+          </div>
+        </div>
+
+        <h3 class="serif text-3xl text-[var(--stone)] mb-2" data-fr="Table réservée !" data-en="Table booked!">Table réservée !</h3>
+        <p class="text-[var(--stone-mid)] text-sm font-light mb-5 max-w-xs mx-auto">
+          <span data-fr="Votre table est bien enregistrée au" data-en="Your table is confirmed at">Votre table est bien enregistrée au</span> <strong class="font-semibold text-[var(--stone)]">Café de la Place</strong>.
+        </p>
+        <div id="confirmSummary" class="text-xs text-[var(--stone-mid)] p-4 rounded-xl mb-5 font-light leading-relaxed text-left" style="background:var(--cream);"></div>
+
+        <!-- WhatsApp share + Close -->
+        <div class="flex flex-col gap-2.5 items-center">
+          <a id="whatsappBtn" href="#" target="_blank" rel="noopener" onclick="return openWhatsApp()"
+            style="display:inline-flex;align-items:center;gap:8px;padding:0.7rem 1.5rem;background:#25D366;color:#fff;border-radius:9999px;font-size:0.8rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;text-decoration:none;transition:all 0.2s;"
+            onmouseover="this.style.background='#1ebe5d'" onmouseout="this.style.background='#25D366'">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <span data-fr="Partager sur WhatsApp" data-en="Share on WhatsApp">Partager sur WhatsApp</span>
+          </a>
+          <button onclick="closeBooking()" class="btn-ghost-sm" data-fr="Fermer" data-en="Close">Fermer</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Modal 8+ ─── -->
+  <div class="modal-overlay" id="modal8plus">
+    <div class="modal-card p-8 text-center max-w-sm">
+      <p class="text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-3">Grande tablée</p>
+      <h4 class="serif text-2xl text-[var(--stone)] mb-3">8 personnes ou plus</h4>
+      <p class="text-[var(--stone-mid)] text-sm font-light leading-relaxed mb-6">
+        Pour les réservations de groupe, merci de nous contacter par téléphone afin de préparer au mieux votre accueil.
+      </p>
+      <a href="tel:0219431037" class="btn-primary inline-flex mx-auto mb-4">021 943 10 37</a>
+      <div>
+        <button onclick="document.getElementById('modal8plus').classList.remove('open')" class="btn-ghost-sm">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ JAVASCRIPT ════════════════ -->
+  <script>
+    const state = { guests: null, date: null, service: null, time: null, zone: 'interieur' };
+    const SLOTS = {
+      midi: ['11:45','12:00','12:15','12:30','13:00'],
+      soir: ['18:30','19:00','19:30','20:00','20:30'],
+    };
+    const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    let calYear, calMonth;
+    let sbClient = null;
+
+    try {
+      const cfg = window.SUPABASE_CONFIG;
+      if (cfg && cfg.url && !cfg.url.includes('VOTRE')) {
+        sbClient = window.supabase.createClient(cfg.url, cfg.key);
+      }
+    } catch(e) { console.warn(e); }
+
+    // ── MODAL ──
+    function openBooking() {
+      document.getElementById('bookingModal').classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (!state.guests) { buildGuestGrid(); goStep(1); }
+    }
+    function closeBooking() {
+      document.getElementById('bookingModal').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.getElementById('bookingModal').addEventListener('click', function(e) {
+      if (e.target === this) closeBooking();
+    });
+
+    // ── STEP NAV ──
+    function goStep(n) {
+      document.querySelectorAll('#bookingModal .step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step-' + n).classList.add('active');
+      for (let i = 1; i <= 4; i++) {
+        const bar = document.getElementById('bar-' + i);
+        if (bar) bar.className = 'prog-bar' + (i <= n ? ' done' : '');
+      }
+      if (n === 2) renderSuggestions();
+      if (n === 3 && !state.service) selectService('soir');
+      if (n === 4) renderSummary();
+    }
+
+    // ── ZONE SELECTION ──
+    function selectZone(zone) {
+      state.zone = zone;
+      document.getElementById('zoneBtnInterieur').classList.toggle('selected', zone === 'interieur');
+      document.getElementById('zoneBtnTerrasse').classList.toggle('selected', zone === 'terrasse');
+    }
+
+    // ── CLOSED DAY CHECK ──
+    function isClosedDay(d) {
+      const dow = d.getDay();
+      return dow === 0 || dow === 1; // Dimanche & Lundi fermés
+    }
+
+    // ── SUGGESTIONS ──
+    function getSuggestions() {
+      const list = [];
+      const now = new Date();
+      const h = now.getHours();
+
+      if (!isClosedDay(now)) {
+        if (h < 13) list.push({ label: "Aujourd'hui · Midi", sub: "11h45 – 13h00 · Déjeuner de saison", time: '12:15', service: 'midi', date: new Date(now), primary: true, badge: 'Disponible' });
+        if (h < 20) list.push({ label: "Aujourd'hui · Ce soir", sub: "18h30 – 20h30 · Dîner au bistrot", time: '19:30', service: 'soir', date: new Date(now), primary: !list.length, badge: 'Recommandé' });
+      }
+      const tom = new Date(now); tom.setDate(now.getDate() + 1);
+      if (!isClosedDay(tom)) list.push({ label: "Demain · Soir", sub: "18h30 – 20h30 · Table pour dîner", time: '19:30', service: 'soir', date: tom, primary: false, badge: null });
+
+      for (let i = 2; i <= 7; i++) {
+        const d = new Date(now); d.setDate(now.getDate() + i);
+        const dow = d.getDay();
+        if ((dow === 5 || dow === 6) && d.toDateString() !== tom.toDateString()) {
+          list.push({ label: dow === 5 ? "Vendredi soir" : "Samedi soir", sub: "18h30 – 20h30 · Ambiance gourmande", time: '19:30', service: 'soir', date: d, primary: false, badge: 'Week-end' });
+          break;
+        }
+      }
+
+      if (list.length === 0 || isClosedDay(now)) {
+        for (let i = 1; i <= 4; i++) {
+          const d = new Date(now); d.setDate(now.getDate() + i);
+          if (!isClosedDay(d)) {
+            const dayName = d.toLocaleDateString('fr-CH', { weekday: 'long' });
+            const cap = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+            list.unshift({ label: `Prochain service · ${cap}`, sub: "18h30 – 20h30 · Réouverture du bistrot", time: '19:30', service: 'soir', date: d, primary: true, badge: 'Prochaine ouverture' });
+            break;
+          }
+        }
+      }
+      return list.slice(0, 3);
+    }
+
+    function renderSuggestions() {
+      const box = document.getElementById('quickSuggestions');
+      if (!box) return;
+      box.innerHTML = '';
+
+      const sugs = getSuggestions();
+      if (!sugs.length) return;
+
+      const hdr = document.createElement('p');
+      hdr.className = 'text-[0.65rem] font-semibold uppercase tracking-widest text-[var(--stone-light)] mb-2';
+      hdr.textContent = 'Suggestions rapides en 1 clic';
+      box.appendChild(hdr);
+
+      sugs.forEach((s, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sugg-card' + (i === 0 ? ' primary-sugg' : '');
+        btn.innerHTML = `
+          <div>
+            <div style="font-weight:600;font-size:0.875rem;color:var(--stone);display:flex;align-items:center;gap:8px;">
+              ${s.label}
+              ${s.badge ? `<span style="font-size:0.6rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:9999px;background:rgba(44,37,32,0.1);color:var(--stone-mid);">${s.badge}</span>` : ''}
+            </div>
+            <div style="font-size:0.75rem;color:var(--stone-light);margin-top:2px;font-weight:400;">${s.sub} · <strong>${s.time}</strong></div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--stone-mid)" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        `;
+        btn.onclick = () => {
+          state.date = s.date;
+          state.service = s.service;
+          state.time = s.time;
+          goStep(3); // Allows choosing zone or confirming
+        };
+        box.appendChild(btn);
+      });
+    }
+
+    // ── GUEST GRID ──
+    function buildGuestGrid() {
+      const grid = document.getElementById('guestGrid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 8; i++) {
+        const b = document.createElement('button');
+        b.className = 'num-tile';
+        b.textContent = i;
+        b.onclick = () => {
+          state.guests = i;
+          document.querySelectorAll('#guestGrid .num-tile').forEach(t => t.classList.remove('selected'));
+          b.classList.add('selected');
+          setTimeout(() => { initCalendar(); goStep(2); }, 160);
+        };
+        grid.appendChild(b);
+      }
+      const bPlus = document.createElement('button');
+      bPlus.className = 'num-tile col-span-4';
+      bPlus.textContent = '8+ personnes (021 943 10 37)';
+      bPlus.onclick = () => document.getElementById('modal8plus').classList.add('open');
+      grid.appendChild(bPlus);
+    }
+
+    // ── CALENDAR ──
+    function initCalendar() {
+      const t = new Date();
+      calYear = t.getFullYear();
+      calMonth = t.getMonth();
+      renderCalendar();
+    }
+    function shiftMonth(d) {
+      calMonth += d;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      renderCalendar();
+    }
+    function renderCalendar() {
+      document.getElementById('calTitle').textContent = MONTHS[calMonth] + ' ' + calYear;
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
+      const today = new Date(); today.setHours(0,0,0,0);
+      const first = new Date(calYear, calMonth, 1);
+      let dow = first.getDay() - 1; if (dow < 0) dow = 6;
+      for (let i = 0; i < dow; i++) grid.appendChild(document.createElement('div'));
+      const days = new Date(calYear, calMonth + 1, 0).getDate();
+      for (let d = 1; d <= days; d++) {
+        const date = new Date(calYear, calMonth, d);
+        const cell = document.createElement('button');
+        cell.className = 'day-cell';
+        cell.textContent = d;
+        const isPast = date < today;
+        const isClosed = date.getDay() === 0 || date.getDay() === 1;
+        if (isPast || isClosed) { cell.classList.add(isPast ? 'past' : 'disabled'); cell.disabled = true; }
+        else {
+          if (date.getTime() === today.getTime()) cell.classList.add('today');
+          if (state.date && date.toDateString() === state.date.toDateString()) cell.classList.add('selected');
+          cell.onclick = () => {
+            state.date = date;
+            document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('selected'));
+            cell.classList.add('selected');
+            setTimeout(() => { selectService(state.service || 'soir'); goStep(3); }, 160);
+          };
+        }
+        grid.appendChild(cell);
+      }
+    }
+
+    // ── SERVICE & TIME ──
+    function selectService(s) {
+      state.service = s;
+      document.getElementById('tabMidi').classList.toggle('selected', s === 'midi');
+      document.getElementById('tabSoir').classList.toggle('selected', s === 'soir');
+      const box = document.getElementById('timeChips');
+      box.innerHTML = '';
+      SLOTS[s].forEach(slot => {
+        const c = document.createElement('button');
+        c.className = 'chip' + (state.time === slot ? ' selected' : '');
+        c.textContent = slot;
+        c.onclick = () => {
+          state.time = slot;
+          document.querySelectorAll('#timeChips .chip').forEach(ch => ch.classList.remove('selected'));
+          c.classList.add('selected');
+        };
+        box.appendChild(c);
+      });
+      if (!state.time) {
+        state.time = SLOTS[s][0];
+        box.firstChild?.classList.add('selected');
+      }
+    }
+
+    // ── SUMMARY ──
+    function renderSummary() {
+      const box = document.getElementById('summaryBox');
+      if (!state.date) return;
+      const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+      const cap = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+      const zoneLabel = (state.zone === 'terrasse') ? '🌿 Terrasse ombragée' : '🍷 Intérieur (Salle)';
+
+      box.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="line-height:1.6;">
+            <span style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--stone-light);">Détails de la réservation</span><br/>
+            <span style="font-weight:600;color:var(--stone);">${cap}</span> à <span style="font-weight:600;color:var(--stone);">${state.time || '19:30'}</span>
+            <span style="color:var(--stone-mid);">&nbsp;·&nbsp;${state.service === 'midi' ? 'Midi' : 'Soir'}</span><br/>
+            <span style="color:var(--stone-mid);">${state.guests} personne${state.guests > 1 ? 's' : ''} &nbsp;·&nbsp; <strong>${zoneLabel}</strong></span>
+          </div>
+          <button type="button" onclick="goStep(3);" style="background:none;border:none;cursor:pointer;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--accent);text-decoration:underline;white-space:nowrap;">Modifier</button>
+        </div>
+      `;
+    }
+
+    // ── LOCAL DATE FORMATTER (Timezone safe) ──
+    function toLocalISO(d) {
+      if (!d) return '';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    // ── VALIDATION HELPERS ──
+    function validatePhone(v) {
+      const clean = v.replace(/[\s\-\.\(\)]/g, '');
+      // Swiss national (0xx xxx xx xx) or international format (+... or 00...)
+      return /^(0[1-9][0-9]{8}|(\+|00)[1-9][0-9]{7,14})$/.test(clean);
+    }
+    function validateEmail(v) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+    }
+    function setFieldState(inputId, errId, valid, msg) {
+      const input = document.getElementById(inputId);
+      const err = document.getElementById(errId);
+      if (valid) {
+        input.classList.remove('error'); input.classList.add('valid');
+        if (err) { err.classList.remove('show'); }
+      } else {
+        input.classList.remove('valid'); input.classList.add('error');
+        if (err && msg) { err.textContent = msg; err.classList.add('show'); }
+      }
+    }
+
+    // ── SUBMIT ──
+    async function submitReservation() {
+      const name = document.getElementById('fName').value.trim();
+      const phone = document.getElementById('fPhone').value.trim();
+      const email = document.getElementById('fEmail').value.trim();
+      const userNotes = document.getElementById('fNotes').value.trim();
+      const btn = document.getElementById('btnSubmit');
+      const err = document.getElementById('submitError');
+      err.classList.add('hidden');
+
+      let ok = true;
+
+      // Name
+      if (!name || name.length < 2) {
+        setFieldState('fName','errName', false, 'Veuillez indiquer votre prénom et nom.');
+        ok = false;
+      } else { setFieldState('fName','errName', true); }
+
+      // Phone & Email — at least one required
+      const hasPhone = phone.length > 0;
+      const hasEmail = email.length > 0;
+
+      if (!hasPhone && !hasEmail) {
+        setFieldState('fPhone','errPhone', false, 'Veuillez fournir votre téléphone ou votre e-mail.');
+        setFieldState('fEmail','errEmail', false, 'Au moins un moyen de contact est requis.');
+        ok = false;
+      } else {
+        if (hasPhone && !validatePhone(phone)) {
+          setFieldState('fPhone','errPhone', false, 'Numéro invalide (+41 / 07x / inter). Ex : +41 79 123 45 67');
+          ok = false;
+        } else if (hasPhone) { setFieldState('fPhone','errPhone', true); }
+        else { document.getElementById('fPhone').classList.remove('error','valid'); document.getElementById('errPhone').classList.remove('show'); }
+
+        if (hasEmail && !validateEmail(email)) {
+          setFieldState('fEmail','errEmail', false, 'Adresse e-mail invalide.');
+          ok = false;
+        } else if (hasEmail) { setFieldState('fEmail','errEmail', true); }
+        else { document.getElementById('fEmail').classList.remove('error','valid'); document.getElementById('errEmail').classList.remove('show'); }
+      }
+
+      if (!ok) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Enregistrement…';
+
+      // Encode zone into notes: [Zone: Terrasse]
+      const zoneTag = state.zone === 'terrasse' ? '[Zone: Terrasse] ' : '[Zone: Intérieur] ';
+      const fullNotes = zoneTag + userNotes;
+
+      const payload = {
+        customer_name: name,
+        customer_phone: phone || null,
+        customer_email: email || null,
+        guests_count: state.guests,
+        reservation_date: toLocalISO(state.date),
+        service_type: state.service,
+        reservation_time: state.time || '19:30',
+        notes: fullNotes.trim() || null,
+        status: 'pending'
+      };
+
+      try {
+        if (sbClient) {
+          const { error } = await sbClient.from('reservations').insert([payload]);
+          if (error) throw error;
+        } else {
+          console.log('Mode démo locale:', payload);
+          await new Promise(r => setTimeout(r, 600));
+        }
+        const dateStr = state.date.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+        const zoneStr = state.zone === 'terrasse' ? 'Terrasse ombragée' : 'Intérieur (Salle)';
+        document.getElementById('confirmSummary').innerHTML = `
+          <strong>${name}</strong><br/>
+          📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} à ${state.time || '19:30'} (${state.service === 'midi' ? 'Midi' : 'Soir'})<br/>
+          👥 ${state.guests} personne${state.guests>1?'s':''} &nbsp;·&nbsp; 📍 ${zoneStr}
+        `;
+        goStep(5);
+      } catch(e) {
+        console.error(e);
+        err.textContent = 'Une erreur s\'est produite. Veuillez réessayer ou appeler le 021 943 10 37.';
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmer la réservation';
+      }
+    }
+
+    // ── INLINE VALIDATION ON BLUR ──
+    document.getElementById('fPhone').addEventListener('blur', function() {
+      if (this.value.trim()) setFieldState('fPhone','errPhone', validatePhone(this.value.trim()));
+    });
+    document.getElementById('fEmail').addEventListener('blur', function() {
+      if (this.value.trim()) setFieldState('fEmail','errEmail', validateEmail(this.value.trim()));
+    });
+    document.getElementById('fName').addEventListener('blur', function() {
+      if (this.value.trim().length >= 2) setFieldState('fName','errName', true);
+    });
+
+    // ── WHATSAPP SHARE ──
+    function openWhatsApp() {
+      if (!state.date) return false;
+      const lang = localStorage.getItem('cdp_lang') || 'fr';
+      const dateStr = state.date.toLocaleDateString(lang === 'en' ? 'en-GB' : 'fr-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+      const zoneStr = state.zone === 'terrasse'
+        ? (lang === 'en' ? '🌿 Shaded terrace' : '🌿 Terrasse ombragée')
+        : (lang === 'en' ? '🍷 Indoor (dining room)' : '🍷 Intérieur (Salle)');
+      let text;
+      if (lang === 'en') {
+        text = `✅ *Café de la Place — Reservation confirmed*\n\n📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} at ${state.time || '19:30'} (${state.service === 'midi' ? 'Lunch' : 'Dinner'})\n👥 ${state.guests} guest${state.guests > 1 ? 's' : ''} · ${zoneStr}\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\n\n_See you soon at Café de la Place!_`;
+      } else {
+        text = `✅ *Café de la Place — Réservation confirmée*\n\n📅 ${dateStr.charAt(0).toUpperCase()+dateStr.slice(1)} à ${state.time || '19:30'} (${state.service === 'midi' ? 'Midi' : 'Soir'})\n👥 ${state.guests} personne${state.guests > 1 ? 's' : ''} · ${zoneStr}\n📍 Place du Village, 1806 Saint-Légier\n📞 021 943 10 37\n\n_À très bientôt au Café de la Place !_`;
+      }
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      return false;
+    }
+
+    // ── BILINGUAL i18n ENGINE ──
+    // Reads data-fr / data-en attrs on every tagged element, swaps textContent / innerHTML on toggle.
+    let _currentLang = localStorage.getItem('cdp_lang') || 'fr';
+
+    function applyLang(lang) {
+      _currentLang = lang;
+      localStorage.setItem('cdp_lang', lang);
+      document.documentElement.lang = lang === 'en' ? 'en' : 'fr';
+      document.getElementById('langLabel').textContent = lang === 'en' ? 'FR' : 'EN';
+      document.querySelectorAll('[data-fr]').forEach(el => {
+        const val = el.getAttribute('data-' + lang);
+        if (val === null) return;
+        if (/<[a-z]/i.test(val)) { el.innerHTML = val; } else { el.textContent = val; }
+      });
+    }
+
+    function toggleLang() {
+      applyLang(_currentLang === 'fr' ? 'en' : 'fr');
+    }
+
+    // Restore persisted lang on load
+    if (_currentLang === 'en') applyLang('en');
+  </script>
+</body>
+</html>
