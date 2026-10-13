@@ -2,7 +2,8 @@
   "name": "cafe-de-la-place",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server.js",
+    "start": "node local-server.js",
+    "build": "npx tailwindcss -i ./input.css -o ./assets/style.min.css --minify",
     "build:css": "npx tailwindcss -i ./input.css -o ./assets/style.min.css --minify",
     "watch:css": "npx tailwindcss -i ./input.css -o ./assets/style.min.css --watch"
   },

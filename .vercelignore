@@ -1,0 +1,5 @@
+local-server.js
+server.js
+.agents/
+skills-lock.json
+schema.sql
