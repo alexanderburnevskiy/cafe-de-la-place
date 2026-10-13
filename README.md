@@ -30,7 +30,7 @@ Système de réservation de tables autonome et réactif pour le restaurant **Caf
 ```bash
 # Lancer le serveur local
 npm start
-# ou : node local-server.js
+# ou : node server.js
 ```
 
 - Client : http://localhost:3000/client-widget.html

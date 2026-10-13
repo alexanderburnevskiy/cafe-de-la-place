@@ -2,18 +2,23 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
 const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js':   'application/javascript; charset=utf-8',
-  '.css':  'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
-  '.svg':  'image/svg+xml'
+  '.html':  'text/html; charset=utf-8',
+  '.js':    'application/javascript; charset=utf-8',
+  '.css':   'text/css; charset=utf-8',
+  '.json':  'application/json; charset=utf-8',
+  '.png':   'image/png',
+  '.jpg':   'image/jpeg',
+  '.jpeg':  'image/jpeg',
+  '.svg':   'image/svg+xml',
+  '.webp':  'image/webp',
+  '.ico':   'image/x-icon',
+  '.woff2': 'font/woff2'
 };
 
-const server = http.createServer((req, res) => {
+function handler(req, res) {
   let reqPath = req.url.split('?')[0];
 
   // Route aliases
@@ -23,7 +28,9 @@ const server = http.createServer((req, res) => {
   else if (reqPath === '/dashboard') reqPath = '/admin.html';
   else if (reqPath === '/favicon.ico') reqPath = '/assets/logo.png';
 
-  let filePath = path.join(__dirname, reqPath);
+  let cleanPath = reqPath.replace(/^\/+/, '');
+  let filePath = path.join(__dirname, cleanPath);
+
   if (!path.extname(filePath) && fs.existsSync(filePath + '.html')) {
     filePath += '.html';
   }
@@ -42,7 +49,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    const isAsset = ['.jpg', '.png', '.svg', '.woff2'].includes(ext);
+    const isAsset = ['.jpg', '.jpeg', '.png', '.svg', '.webp', '.woff2'].includes(ext);
     res.writeHead(200, {
       'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
       'Access-Control-Allow-Origin': '*',
@@ -50,11 +57,17 @@ const server = http.createServer((req, res) => {
     });
     res.end(content);
   });
-});
+}
 
-server.listen(PORT, () => {
-  console.log(`Café de la Place Server running on http://localhost:${PORT}/`);
-  console.log(`- Site web & Réservation : http://localhost:${PORT}/`);
-  console.log(`- Espace Personnel/Admin : http://localhost:${PORT}/admin`);
-  console.log(`- Widget autonome        : http://localhost:${PORT}/client-widget.html`);
-});
+const server = http.createServer(handler);
+
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Café de la Place Server running on http://localhost:${PORT}/`);
+    console.log(`- Site web : http://localhost:${PORT}/`);
+    console.log(`- Admin    : http://localhost:${PORT}/admin`);
+    console.log(`- Widget   : http://localhost:${PORT}/client-widget.html`);
+  });
+}
+
+module.exports = handler;

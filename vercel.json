@@ -1,5 +1,11 @@
 {
+  "version": 2,
   "cleanUrls": true,
+  "functions": {
+    "server.js": {
+      "includeFiles": "assets/**,*.html,config.js,widget.js"
+    }
+  },
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/widget", "destination": "/client-widget.html" }
