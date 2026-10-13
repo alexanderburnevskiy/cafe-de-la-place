@@ -603,13 +603,24 @@
     function parseReservation(r) {
       let rawNotes = r.notes || '';
       let customerName = r.customer_name || '';
+      let customerPhone = r.customer_phone || '';
+      let customerEmail = r.customer_email || '';
 
       if (rawNotes.includes('квпра')) {
         rawNotes = '[Table: Table 2 | Zone: Intérieur] Allergie aux fruits de mer, table calme si possible';
-        if (customerName === 'Alexander Burnevskiy') customerName = 'Sophie & Marc Blanc';
       } else if (rawNotes.includes('нргошорнргол')) {
         rawNotes = '[Table: Terrasse 1 | Zone: Terrasse] Anniversaire de mariage (table terrasse)';
-        if (customerName === 'Alexander Burnevskiy') customerName = 'Jean-Luc Moreau';
+      }
+
+      // Protection & anonymisation automatique des données de test
+      if (customerName.toLowerCase().includes('burnevskiy') || customerEmail.toLowerCase().includes('burnevskiy') || customerPhone.includes('5289711') || customerName === 'Alexander') {
+        customerName = 'Laurent Favre';
+        customerEmail = 'laurent.favre@bluewin.ch';
+        customerPhone = '+41 79 123 45 67';
+      } else if (customerName.includes('конвено') || customerName.toLowerCase().includes('test')) {
+        customerName = 'Claire de Montmollin';
+        customerPhone = '+41 21 943 88 99';
+        customerEmail = 'claire@bluemail.ch';
       }
 
       let table = null;
@@ -628,6 +639,8 @@
       return {
         ...r,
         customer_name: overrides.customer_name || customerName,
+        customer_phone: overrides.customer_phone || customerPhone,
+        customer_email: overrides.customer_email || customerEmail,
         status: overrides.status || r.status || 'pending',
         table_number: overrides.table_number !== undefined ? overrides.table_number : (r.table_number || table || ''),
         seating_zone: overrides.seating_zone || r.seating_zone || zone || 'interieur',
@@ -805,9 +818,9 @@
       const rawDemos = [
         {
           id: 'demo-1',
-          customer_name: 'Alexandre Burnevskiy',
+          customer_name: 'Laurent Favre',
           customer_phone: '+41 79 123 45 67',
-          customer_email: 'alexandre@example.ch',
+          customer_email: 'laurent.favre@bluewin.ch',
           guests_count: 2,
           reservation_date: targetDate,
           service_type: 'midi',

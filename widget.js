@@ -241,7 +241,7 @@
 
           <div class="cdp-field">
             <label>Nom et prénom *</label>
-            <input type="text" id="cdpName" placeholder="Alexandre Burnevskiy" />
+            <input type="text" id="cdpName" placeholder="Jean Dupont" />
             <p class="cdp-field-error" id="cdpErrName">Nom obligatoire.</p>
           </div>
           <div class="cdp-field">
@@ -251,7 +251,7 @@
           </div>
           <div class="cdp-field">
             <label>E-mail <span style="font-weight:400;text-transform:none;">(requis si pas de téléphone)</span></label>
-            <input type="email" id="cdpEmail" placeholder="alexandre@example.ch" />
+            <input type="email" id="cdpEmail" placeholder="jean.dupont@example.ch" />
             <p class="cdp-field-error" id="cdpErrEmail">Adresse e-mail invalide.</p>
           </div>
           <div class="cdp-field">
